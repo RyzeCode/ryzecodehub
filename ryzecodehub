@@ -7,6 +7,10 @@ local RyzeCodeHub = {}
 RyzeCodeHub.Version = "1.0.0"
 RyzeCodeHub.Name = "Ryze.xyz"
 
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
 -- ============================
 -- COLORES
 -- ============================
@@ -27,9 +31,9 @@ local Colors = {
     ToggleOn     = Color3.fromRGB(30, 144, 255),
     ToggleOff    = Color3.fromRGB(80, 80, 90),
     ToggleCircle = Color3.fromRGB(255, 255, 255),
-    SliderFill   = Color3.fromRGB(30, 144, 255),   -- relleno azul del slider
-    SliderEmpty  = Color3.fromRGB(80, 80, 90),     -- fondo gris del slider
-    SliderKnob   = Color3.fromRGB(255, 255, 255),  -- círculo blanco
+    SliderFill   = Color3.fromRGB(30, 144, 255),
+    SliderEmpty  = Color3.fromRGB(80, 80, 90),
+    SliderKnob   = Color3.fromRGB(255, 255, 255),
 }
 
 -- ============================
@@ -213,6 +217,39 @@ function RyzeCodeHub:CreateWindow(config)
     end)
 
     -- ============================
+    -- CÍRCULO FOV (invisible al principio)
+    -- ============================
+    local fovCircle = Instance.new("Frame")
+    fovCircle.Name = "FovCircle"
+    fovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+    fovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
+    fovCircle.Size = UDim2.new(0, 300, 0, 300)
+    fovCircle.BackgroundTransparency = 1
+    fovCircle.BorderSizePixel = 0
+    fovCircle.Visible = false
+    fovCircle.ZIndex = 10
+    fovCircle.Parent = screenGui
+
+    local fovCircleCorner = Instance.new("UICorner")
+    fovCircleCorner.CornerRadius = UDim.new(1, 0)
+    fovCircleCorner.Parent = fovCircle
+
+    local fovCircleStroke = Instance.new("UIStroke")
+    fovCircleStroke.Color = Color3.fromRGB(30, 144, 255)
+    fovCircleStroke.Thickness = 2
+    fovCircleStroke.Transparency = 0.2
+    fovCircleStroke.Parent = fovCircle
+
+    -- Función que ajusta el tamaño del círculo según el FOV
+    local function actualizarFovCircle(fovValue)
+        -- Convertimos el FOV a un tamaño de círculo en píxeles
+        -- 20 FOV -> círculo pequeño (~120 px de diámetro)
+        -- 120 FOV -> círculo grande (~720 px de diámetro)
+        local diametro = math.clamp(fovValue * 6, 120, 720)
+        fovCircle.Size = UDim2.new(0, diametro, 0, diametro)
+    end
+
+    -- ============================
     -- OBJETO WINDOW
     -- ============================
     local Window = {}
@@ -358,7 +395,7 @@ function RyzeCodeHub:CreateWindow(config)
         end
 
         -- ============================
-        -- SLIDER
+        -- SLIDER (con arrastre global)
         -- ============================
         function Tab:CreateSlider(sliderConfig)
             sliderConfig = sliderConfig or {}
@@ -368,7 +405,6 @@ function RyzeCodeHub:CreateWindow(config)
             local currentValue = sliderConfig.CurrentValue or minValue
             local callback = sliderConfig.Callback or function() end
 
-            -- Contenedor del slider
             local container = Instance.new("TextButton")
             container.Name = "Slider_" .. sliderName
             container.Size = UDim2.new(1, -16, 0, 50)
@@ -382,7 +418,6 @@ function RyzeCodeHub:CreateWindow(config)
             contCorner.CornerRadius = UDim.new(0, 6)
             contCorner.Parent = container
 
-            -- Texto del nombre
             local label = Instance.new("TextLabel")
             label.Name = "Label"
             label.Size = UDim2.new(1, -80, 0, 20)
@@ -395,7 +430,6 @@ function RyzeCodeHub:CreateWindow(config)
             label.TextXAlignment = Enum.TextXAlignment.Left
             label.Parent = container
 
-            -- Texto del valor (esquina derecha)
             local valueLabel = Instance.new("TextLabel")
             valueLabel.Name = "ValueLabel"
             valueLabel.Size = UDim2.new(0, 70, 0, 20)
@@ -408,7 +442,6 @@ function RyzeCodeHub:CreateWindow(config)
             valueLabel.TextXAlignment = Enum.TextXAlignment.Right
             valueLabel.Parent = container
 
-            -- Barra de fondo (gris)
             local bar = Instance.new("Frame")
             bar.Name = "Bar"
             bar.Size = UDim2.new(1, -20, 0, 8)
@@ -421,7 +454,6 @@ function RyzeCodeHub:CreateWindow(config)
             barCorner.CornerRadius = UDim.new(1, 0)
             barCorner.Parent = bar
 
-            -- Relleno (azul) del slider
             local fill = Instance.new("Frame")
             fill.Name = "Fill"
             fill.Size = UDim2.new(0, 0, 1, 0)
@@ -433,7 +465,6 @@ function RyzeCodeHub:CreateWindow(config)
             fillCorner.CornerRadius = UDim.new(1, 0)
             fillCorner.Parent = fill
 
-            -- Círculo (knob)
             local knob = Instance.new("Frame")
             knob.Name = "Knob"
             knob.Size = UDim2.new(0, 16, 0, 16)
@@ -447,15 +478,17 @@ function RyzeCodeHub:CreateWindow(config)
             knobCorner.CornerRadius = UDim.new(1, 0)
             knobCorner.Parent = knob
 
-            -- Función para actualizar según la posición del ratón
-            local function actualizarDesdeInput(inputX)
+            local dragging = false
+
+            local function actualizarDesdeX(inputX)
                 local barAbsX = bar.AbsolutePosition.X
                 local barAbsWidth = bar.AbsoluteSize.X
+                if barAbsWidth <= 0 then return end
+
                 local relative = math.clamp((inputX - barAbsX) / barAbsWidth, 0, 1)
-
                 local newValue = math.floor(minValue + (maxValue - minValue) * relative + 0.5)
-                currentValue = newValue
 
+                currentValue = newValue
                 fill.Size = UDim2.new(relative, 0, 1, 0)
                 knob.Position = UDim2.new(relative, -8, 0.5, -8)
                 valueLabel.Text = tostring(newValue)
@@ -463,20 +496,28 @@ function RyzeCodeHub:CreateWindow(config)
                 pcall(callback, newValue)
             end
 
-            -- Detectar clic y arrastre sobre la barra
             bar.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    actualizarDesdeInput(input.Position.X)
+                if input.UserInputType == Enum.UserInputType.MouseButton1
+                or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = true
+                    actualizarDesdeX(input.Position.X)
                 end
             end)
 
-            bar.InputChanged:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                    actualizarDesdeInput(input.Position.X)
+            UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1
+                or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = false
                 end
             end)
 
-            -- Inicializar el slider con el valor actual
+            UserInputService.InputChanged:Connect(function(input)
+                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+                or input.UserInputType == Enum.UserInputType.Touch) then
+                    actualizarDesdeX(input.Position.X)
+                end
+            end)
+
             local initialRelative = (currentValue - minValue) / (maxValue - minValue)
             fill.Size = UDim2.new(initialRelative, 0, 1, 0)
             knob.Position = UDim2.new(initialRelative, -8, 0.5, -8)
@@ -511,6 +552,10 @@ function RyzeCodeHub:CreateWindow(config)
         screenGui:Destroy()
     end
 
+    -- Exponemos la función para actualizar el círculo FOV desde el auto-setup
+    Window._actualizarFovCircle = actualizarFovCircle
+    Window._fovCircle = fovCircle
+
     return Window
 end
 
@@ -535,8 +580,21 @@ AutoTab:CreateSlider({
     CurrentValue = 70,
     Callback = function(valor)
         print("[Ryze.xyz] FOV:", valor)
-        -- Aquí aplicas el FOV al juego si quieres
-        -- workspace.CurrentCamera.FieldOfView = valor
+        -- Actualizamos el tamaño del círculo FOV automáticamente
+        if AutoWindow._actualizarFovCircle then
+            AutoWindow._actualizarFovCircle(valor)
+        end
+    end
+})
+
+AutoTab:CreateToggle({
+    Name = "Show FOV",
+    CurrentValue = false,
+    Callback = function(valor)
+        print("[Ryze.xyz] Show FOV:", valor)
+        if AutoWindow._fovCircle then
+            AutoWindow._fovCircle.Visible = valor
+        end
     end
 })
 
