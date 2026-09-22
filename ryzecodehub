@@ -793,9 +793,6 @@ function RyzeCodeHub:CreateWindow(config)
             return button, function() return currentKey end
         end
 
-        -- ============================
-        -- BOTÓN SIMPLE
-        -- ============================
         function Tab:CreateButton(buttonConfig)
             buttonConfig = buttonConfig or {}
             local buttonName = buttonConfig.Name or "Button"
@@ -832,9 +829,6 @@ function RyzeCodeHub:CreateWindow(config)
             return button
         end
 
-        -- ============================
-        -- FILA: DROPDOWN + BOTÓN EXECUTE A LA DERECHA
-        -- ============================
         function Tab:CreateDropdownWithButton(config)
             config = config or {}
             local name = config.Name or "Bypass"
@@ -1094,14 +1088,26 @@ function RyzeCodeHub:CreateWindow(config)
                 if textBox.Text == "" then return end
                 local textoBypass = convertirChatBypass(textBox.Text)
 
-                -- Enviar el mensaje al chat de Roblox de verdad
-                local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-                if chatEvent then
-                    local sayMessageRequest = chatEvent:FindFirstChild("SayMessageRequest")
-                    if sayMessageRequest then
-                        sayMessageRequest:FireServer(textoBypass, "All")
+                -- Enviar el mensaje al chat de Roblox usando el NUEVO sistema (TextChatService)
+                pcall(function()
+                    local TextChatService = game:GetService("TextChatService")
+                    local TextChannels = TextChatService:FindFirstChild("TextChannels")
+                    if not TextChannels then return end
+
+                    local canalGeneral = TextChannels:FindFirstChild("RBXGeneral")
+                    if not canalGeneral then
+                        for _, canal in ipairs(TextChannels:GetChildren()) do
+                            if canal:IsA("TextChannel") then
+                                canalGeneral = canal
+                                break
+                            end
+                        end
                     end
-                end
+
+                    if canalGeneral then
+                        canalGeneral:SendAsync(textoBypass)
+                    end
+                end)
 
                 pcall(callback, textoBypass, textBox.Text)
                 textBox.Text = ""
