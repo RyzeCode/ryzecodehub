@@ -8,19 +8,19 @@ RyzeCodeHub.Version = "1.0.0"
 RyzeCodeHub.Name = "RyzeCodeHub"
 
 -- ============================
--- COLORES (GRIS OSCURO + BARRA AZUL)
+-- COLORES (BARRA AZUL + RESTO GRIS OSCURO)
 -- ============================
 local Colors = {
-    Background   = Color3.fromRGB(35, 35, 40),     -- fondo general (gris oscuro)
-    TitleBar     = Color3.fromRGB(30, 144, 255),   -- barra de título (azul)
-    TabList      = Color3.fromRGB(28, 28, 32),     -- lista de pestañas
-    TabActive    = Color3.fromRGB(55, 55, 65),     -- pestaña activa
-    TabInactive  = Color3.fromRGB(28, 28, 32),     -- pestaña inactiva
-    Content      = Color3.fromRGB(35, 35, 40),     -- contenido
-    Button       = Color3.fromRGB(50, 50, 60),     -- botones
-    ButtonHover  = Color3.fromRGB(70, 70, 85),     -- botones al pasar el ratón
-    TextDark     = Color3.fromRGB(230, 230, 240),  -- texto
-    TextLight    = Color3.fromRGB(255, 255, 255),  -- texto claro
+    Background   = Color3.fromRGB(35, 35, 40),
+    TitleBar     = Color3.fromRGB(30, 144, 255),
+    TabList      = Color3.fromRGB(28, 28, 32),
+    TabActive    = Color3.fromRGB(55, 55, 65),
+    TabInactive  = Color3.fromRGB(28, 28, 32),
+    Content      = Color3.fromRGB(35, 35, 40),
+    Button       = Color3.fromRGB(50, 50, 60),
+    ButtonHover  = Color3.fromRGB(70, 70, 85),
+    TextDark     = Color3.fromRGB(230, 230, 240),
+    TextLight    = Color3.fromRGB(255, 255, 255),
     Minimize     = Color3.fromRGB(255, 200, 80),
     MinimizeHover= Color3.fromRGB(255, 170, 40),
     Close        = Color3.fromRGB(255, 90, 90),
@@ -42,6 +42,7 @@ function RyzeCodeHub:CreateWindow(config)
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.Parent = game.CoreGui
 
+    -- Ventana principal
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
     mainFrame.Size = UDim2.new(0, 600, 0, 400)
@@ -58,6 +59,7 @@ function RyzeCodeHub:CreateWindow(config)
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = mainFrame
 
+    -- Barra de título
     local titleBar = Instance.new("Frame")
     titleBar.Name = "TitleBar"
     titleBar.Size = UDim2.new(1, 0, 0, 40)
@@ -79,6 +81,7 @@ function RyzeCodeHub:CreateWindow(config)
     title.Font = Enum.Font.GothamBold
     title.Parent = titleBar
 
+    -- Botón minimizar
     local minimizeBtn = Instance.new("TextButton")
     minimizeBtn.Name = "MinimizeBtn"
     minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
@@ -95,6 +98,7 @@ function RyzeCodeHub:CreateWindow(config)
     minCorner.CornerRadius = UDim.new(0, 6)
     minCorner.Parent = minimizeBtn
 
+    -- Botón cerrar
     local closeBtn = Instance.new("TextButton")
     closeBtn.Name = "CloseBtn"
     closeBtn.Size = UDim2.new(0, 30, 0, 30)
@@ -111,6 +115,7 @@ function RyzeCodeHub:CreateWindow(config)
     closeCorner.CornerRadius = UDim.new(0, 6)
     closeCorner.Parent = closeBtn
 
+    -- Pestañas
     local tabList = Instance.new("Frame")
     tabList.Name = "TabList"
     tabList.Size = UDim2.new(0, 150, 1, -40)
@@ -127,6 +132,7 @@ function RyzeCodeHub:CreateWindow(config)
     contentFrame.BorderSizePixel = 0
     contentFrame.Parent = mainFrame
 
+    -- Bola flotante
     local bubble = Instance.new("TextButton")
     bubble.Name = "Bubble"
     bubble.Size = UDim2.new(0, 60, 0, 60)
@@ -157,6 +163,7 @@ function RyzeCodeHub:CreateWindow(config)
         mainFrame.Visible = true
     end)
 
+    -- Minimizar
     minimizeBtn.MouseEnter:Connect(function()
         minimizeBtn.BackgroundColor3 = Colors.MinimizeHover
     end)
@@ -168,6 +175,7 @@ function RyzeCodeHub:CreateWindow(config)
         bubble.Visible = true
     end)
 
+    -- Cerrar
     closeBtn.MouseEnter:Connect(function()
         closeBtn.BackgroundColor3 = Colors.CloseHover
     end)
@@ -178,6 +186,7 @@ function RyzeCodeHub:CreateWindow(config)
         screenGui:Destroy()
     end)
 
+    -- Objeto Window
     local Window = {}
     local tabs = {}
 
