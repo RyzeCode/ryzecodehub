@@ -262,9 +262,6 @@ function RyzeCodeHub:CreateWindow(config)
     closeBtn.MouseLeave:Connect(function()
         closeBtn.TextColor3 = Colors.TextLight
     end)
-    closeBtn.MouseButton1Click:Connect(function()
-        screenGui:Destroy()
-    end)
 
     local fovCircle = Instance.new("Frame")
     fovCircle.Name = "FovCircle"
@@ -302,6 +299,27 @@ function RyzeCodeHub:CreateWindow(config)
     local espFolder = Instance.new("Folder")
     espFolder.Name = "ESP"
     espFolder.Parent = espGui
+
+    -- ============================
+    -- SISTEMA DE LIMPIEZA (importante)
+    -- ============================
+    local cleanupFunctions = {}
+
+    local function addCleanup(fn)
+        table.insert(cleanupFunctions, fn)
+    end
+
+    -- Botón cerrar: destruye UI + limpia todo
+    closeBtn.MouseButton1Click:Connect(function()
+        -- Ejecutamos todas las funciones de limpieza
+        for _, fn in ipairs(cleanupFunctions) do
+            pcall(fn)
+        end
+
+        -- Destruimos la UI
+        screenGui:Destroy()
+        espGui:Destroy()
+    end)
 
     local Window = {}
     local tabs = {}
@@ -402,11 +420,22 @@ function RyzeCodeHub:CreateWindow(config)
             circleCorner.CornerRadius = UDim.new(1, 0)
             circleCorner.Parent = circle
 
+            local toggleState = { value = currentValue, callback = callback }
+
             toggle.MouseButton1Click:Connect(function()
-                currentValue = not currentValue
+                toggleState.value = not toggleState.value
+                currentValue = toggleState.value
                 indicator.BackgroundColor3 = currentValue and Colors.ToggleOn or Colors.ToggleOff
                 circle.Position = currentValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
                 pcall(callback, currentValue)
+            end)
+
+            -- Al cerrar: forzar OFF y ejecutar callback
+            addCleanup(function()
+                if toggleState.value then
+                    toggleState.value = false
+                    pcall(toggleState.callback, false)
+                end
             end)
 
             return toggle
@@ -518,18 +547,23 @@ function RyzeCodeHub:CreateWindow(config)
                 end
             end)
 
-            UserInputService.InputEnded:Connect(function(input)
+            local endConn = UserInputService.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1
                 or input.UserInputType == Enum.UserInputType.Touch then
                     dragging = false
                 end
             end)
 
-            UserInputService.InputChanged:Connect(function(input)
+            local changeConn = UserInputService.InputChanged:Connect(function(input)
                 if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
                 or input.UserInputType == Enum.UserInputType.Touch) then
                     actualizarDesdeX(input.Position.X)
                 end
+            end)
+
+            addCleanup(function()
+                endConn:Disconnect()
+                changeConn:Disconnect()
             end)
 
             local initialRelative = (currentValue - minValue) / (maxValue - minValue)
@@ -683,7 +717,7 @@ function RyzeCodeHub:CreateWindow(config)
                 end
             end)
 
-            UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            local conn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
                 if not esperando then return end
                 if tick() - tiempoActivacion < 0.2 then return end
 
@@ -702,6 +736,10 @@ function RyzeCodeHub:CreateWindow(config)
                 currentKey = nombreBonito
                 button.Text = keybindName .. ": " .. tostring(currentKey)
                 pcall(callback, currentKey, input)
+            end)
+
+            addCleanup(function()
+                conn:Disconnect()
             end)
 
             return button, function() return currentKey end
@@ -730,6 +768,9 @@ function RyzeCodeHub:CreateWindow(config)
     end
 
     function Window:Destroy()
+        for _, fn in ipairs(cleanupFunctions) do
+            pcall(fn)
+        end
         screenGui:Destroy()
         espGui:Destroy()
     end
@@ -737,6 +778,7 @@ function RyzeCodeHub:CreateWindow(config)
     Window._actualizarFovCircle = actualizarFovCircle
     Window._fovCircle = fovCircle
     Window._espFolder = espFolder
+    Window._addCleanup = addCleanup
 
     return Window
 end
@@ -749,11 +791,7 @@ local AimTab = AutoWindow:CreateTab("AIM")
 local SilentTab = AutoWindow:CreateTab("SILENT")
 local EspTab = AutoWindow:CreateTab("ESP")
 
--- ============================
--- ORDEN DE PESTAÑAS
--- ============================
--- (El orden en el que se crean las pestañas determina su posición)
--- AIM, SILENT, ESP
+local addCleanup = AutoWindow._addCleanup
 
 -- Estado AIM
 local aimbotEnabled = false
@@ -824,398 +862,4 @@ AimTab:CreateDropdown({
     Options = { "200M", "600M", "1000M" },
     CurrentOption = "600M",
     Callback = function(opt)
-        if opt == "200M" then aimDistance = 200
-        elseif opt == "600M" then aimDistance = 600
-        elseif opt == "1000M" then aimDistance = 1000 end
-    end
-})
-
-AimTab:CreateDropdown({
-    Name = "BONE AIM",
-    Options = { "HEAD", "BODY" },
-    CurrentOption = "HEAD",
-    Callback = function(opt)
-        boneAim = opt
-    end
-})
-
-AimTab:CreateToggle({
-    Name = "TARGET DEAD",
-    CurrentValue = false,
-    Callback = function(valor)
-        targetDead = valor
-    end
-})
-
-AimTab:CreateToggle({
-    Name = "WALL CHECK",
-    CurrentValue = false,
-    Callback = function(valor)
-        wallCheck = valor
-    end
-})
-
-AimTab:CreateKeybind({
-    Name = "TOGGLE AIM",
-    DefaultKey = "F",
-    Callback = function(nombre, input)
-        toggleKey = nombre
-    end
-})
-
--- ============================
--- SILENT: CONTROLES
--- ============================
-SilentTab:CreateToggle({
-    Name = "SILENT AIM",
-    CurrentValue = false,
-    Callback = function(valor)
-        silentAimEnabled = valor
-        print("[Ryze.xyz] Silent Aim:", valor)
-    end
-})
-
--- ============================
--- ESP: CONTROLES
--- ============================
-EspTab:CreateToggle({
-    Name = "Wallhack",
-    CurrentValue = false,
-    Callback = function(valor)
-        wallhackEnabled = valor
-        if not valor then
-            for _, hijo in ipairs(espFolder:GetChildren()) do
-                if hijo.Name:sub(1, 10) == "WallhackHL" then
-                    hijo:Destroy()
-                end
-            end
-        end
-    end
-})
-
-EspTab:CreateToggle({
-    Name = "Skeleton",
-    CurrentValue = false,
-    Callback = function(valor)
-        skeletonEnabled = valor
-        if not valor then
-            for _, hijo in ipairs(espFolder:GetChildren()) do
-                if hijo.Name:sub(1, 9) == "Skeleton_" then
-                    hijo:Destroy()
-                end
-            end
-            skeletons = {}
-        end
-    end
-})
-
--- ============================
--- AIM: LÓGICA
--- ============================
-local function obtenerPuntoObjetivo(personaje, forzarCabeza)
-    if forzarCabeza or boneAim == "HEAD" then
-        local cabeza = personaje:FindFirstChild("Head")
-        if cabeza then return cabeza end
-    end
-    return personaje:FindFirstChild("HumanoidRootPart")
-        or personaje:FindFirstChild("UpperTorso")
-        or personaje:FindFirstChild("Torso")
-end
-
--- ============================
--- WALL CHECK (arreglado)
--- ============================
-local function hayParedEntre(desde, hasta, ignorarPersonaje)
-    local rayParams = RaycastParams.new()
-    rayParams.FilterType = Enum.RaycastFilterType.Exclude
-    rayParams.IgnoreWater = true
-
-    local filtros = {}
-    if LocalPlayer.Character then
-        table.insert(filtros, LocalPlayer.Character)
-    end
-    if ignorarPersonaje then
-        table.insert(filtros, ignorarPersonaje)
-    end
-    rayParams.FilterDescendantsInstances = filtros
-
-    local direccion = hasta - desde
-    local resultado = workspace:Raycast(desde, direccion, rayParams)
-
-    -- Si no hay resultado, no hay pared
-    if not resultado then return false end
-
-    local golpeado = resultado.Instance
-
-    -- Si lo golpeado es parte del enemigo, no es pared
-    if ignorarPersonaje and golpeado:IsDescendantOf(ignorarPersonaje) then
-        return false
-    end
-
-    -- Si lo golpeado es parte de tu personaje, no es pared
-    if LocalPlayer.Character and golpeado:IsDescendantOf(LocalPlayer.Character) then
-        return false
-    end
-
-    -- Cualquier otra cosa es pared
-    return true
-end
-
-local function obtenerJugadorCercano(forzarCabeza)
-    local cam = workspace.CurrentCamera
-    if not cam then return nil end
-
-    local centroPantalla = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
-    local radioFov = fovValue * 6 / 2
-
-    local mejorObjetivo = nil
-    local mejorDistancia = math.huge
-
-    for _, jugador in ipairs(Players:GetPlayers()) do
-        if jugador ~= LocalPlayer then
-            local personaje = jugador.Character
-            if personaje then
-                local humanoide = personaje:FindFirstChildOfClass("Humanoid")
-                if humanoide then
-                    if humanoide.Health <= 0 and not targetDead then continue end
-
-                    local puntoObjetivo = obtenerPuntoObjetivo(personaje, forzarCabeza)
-                    if puntoObjetivo then
-                        if wallCheck then
-                            if hayParedEntre(cam.CFrame.Position, puntoObjetivo.Position, personaje) then
-                                continue
-                            end
-                        end
-
-                        local distanciaStuds = (puntoObjetivo.Position - cam.CFrame.Position).Magnitude
-                        local distanciaMetros = distanciaStuds * 0.28
-
-                        if distanciaMetros <= aimDistance then
-                            local screenPoint, onScreen = cam:WorldToViewportPoint(puntoObjetivo.Position)
-                            if onScreen then
-                                local distPantalla = (Vector2.new(screenPoint.X, screenPoint.Y) - centroPantalla).Magnitude
-                                if distPantalla <= radioFov and distPantalla < mejorDistancia then
-                                    mejorDistancia = distPantalla
-                                    mejorObjetivo = puntoObjetivo
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    return mejorObjetivo
-end
-
--- ============================
--- AIMBOT NORMAL
--- ============================
-RunService.RenderStepped:Connect(function()
-    if not aimbotEnabled or not aimActive then return end
-
-    local cam = workspace.CurrentCamera
-    if not cam then return end
-
-    local objetivo = obtenerJugadorCercano(false)
-    if objetivo then
-        local factor = 1 - (smoothValue / 100)
-        factor = math.clamp(factor, 0.03, 1)
-
-        local targetCFrame = CFrame.new(cam.CFrame.Position, objetivo.Position)
-        cam.CFrame = cam.CFrame:Lerp(targetCFrame, factor)
-    end
-end)
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    local nombre = keyName(input.UserInputType)
-    if input.UserInputType == Enum.UserInputType.Keyboard then
-        nombre = input.KeyCode.Name
-    end
-    if nombre == toggleKey then aimActive = true end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    local nombre = keyName(input.UserInputType)
-    if input.UserInputType == Enum.UserInputType.Keyboard then
-        nombre = input.KeyCode.Name
-    end
-    if nombre == toggleKey then aimActive = false end
-end)
-
--- ============================
--- SILENT AIM
--- ============================
--- Cuando pulsas el botón izquierdo del ratón, si hay un enemigo dentro del FOV:
--- 1. Guardamos la CFrame actual de la cámara.
--- 2. Movemos la cámara instantáneamente a la cabeza del enemigo.
--- 3. Esperamos 1 frame (para que el servidor reciba la nueva CFrame).
--- 4. Restauramos la CFrame original.
---
--- NOTA: Esto solo funciona si el juego envía el disparo al servidor
--- en el mismo frame en el que pulsas el ratón. En juegos que validan
--- la posición del disparo en el servidor (Raycast remoto), puede no funcionar.
-
-local silentActive = false
-local silentObjetivo = nil
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not silentAimEnabled then return end
-    if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-
-    local cam = workspace.CurrentCamera
-    if not cam then return end
-
-    -- Buscamos objetivo forzando la cabeza
-    local objetivo = obtenerJugadorCercano(true)
-    if not objetivo then return end
-
-    -- Guardamos la CFrame original
-    local cframeOriginal = cam.CFrame
-
-    -- Apuntamos a la cabeza instantáneamente
-    local cframeObjetivo = CFrame.new(cam.CFrame.Position, objetivo.Position)
-    cam.CFrame = cframeObjetivo
-
-    -- Esperamos 1 frame para que el servidor reciba la nueva CFrame
-    RunService.RenderStepped:Wait()
-
-    -- Restauramos la cámara original
-    cam.CFrame = cframeOriginal
-end)
-
--- ============================
--- ESP: LÓGICA
--- ============================
-local function crearHighlight(personaje)
-    local nombre = "WallhackHL_" .. personaje.Name
-    if espFolder:FindFirstChild(nombre) then return end
-
-    local hl = Instance.new("Highlight")
-    hl.Name = nombre
-    hl.Adornee = personaje
-    hl.FillColor = Color3.fromRGB(30, 144, 255)
-    hl.FillTransparency = 0.5
-    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-    hl.OutlineTransparency = 0
-    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    hl.Parent = espFolder
-end
-
-local function crearEsqueleto(personaje)
-    local nombre = "Skeleton_" .. personaje.Name
-    if espFolder:FindFirstChild(nombre) then
-        return espFolder:FindFirstChild(nombre)
-    end
-
-    local carpeta = Instance.new("Folder")
-    carpeta.Name = nombre
-    carpeta.Parent = espFolder
-
-    local lineas = {}
-    for i = 1, 15 do
-        local linea = Instance.new("Frame")
-        linea.Name = "L" .. i
-        linea.BackgroundColor3 = Colors.Skeleton
-        linea.BorderSizePixel = 0
-        linea.AnchorPoint = Vector2.new(0.5, 0.5)
-        linea.ZIndex = 1
-        linea.Visible = false
-        linea.Parent = carpeta
-        lineas[i] = linea
-    end
-
-    skeletons[personaje] = lineas
-    return carpeta
-end
-
-local conexiones = {
-    {"Head", "UpperTorso"},
-    {"UpperTorso", "LowerTorso"},
-    {"LowerTorso", "LeftUpperLeg"},
-    {"LowerTorso", "RightUpperLeg"},
-    {"LeftUpperLeg", "LeftLowerLeg"},
-    {"RightUpperLeg", "RightLowerLeg"},
-    {"UpperTorso", "LeftUpperArm"},
-    {"UpperTorso", "RightUpperArm"},
-    {"LeftUpperArm", "LeftLowerArm"},
-    {"RightUpperArm", "RightLowerArm"},
-    {"Head", "Torso"},
-    {"Torso", "Left Leg"},
-    {"Torso", "Right Leg"},
-    {"Torso", "Left Arm"},
-    {"Torso", "Right Arm"},
-}
-
-local function dibujarLinea(linea, posA, posB)
-    local delta = posB - posA
-    local distancia = delta.Magnitude
-    if distancia < 1 then
-        linea.Visible = false
-        return
-    end
-
-    local centro = (posA + posB) / 2
-    local angulo = math.atan2(delta.Y, delta.X)
-
-    linea.Visible = true
-    linea.Size = UDim2.new(0, distancia, 0, 2)
-    linea.Position = UDim2.new(0, centro.X, 0, centro.Y)
-    linea.Rotation = math.deg(angulo)
-end
-
-RunService.RenderStepped:Connect(function()
-    if wallhackEnabled then
-        for _, jugador in ipairs(Players:GetPlayers()) do
-            if jugador ~= LocalPlayer and jugador.Character then
-                crearHighlight(jugador.Character)
-            end
-        end
-    end
-
-    if skeletonEnabled then
-        local cam = workspace.CurrentCamera
-        if not cam then return end
-
-        for _, jugador in ipairs(Players:GetPlayers()) do
-            if jugador ~= LocalPlayer and jugador.Character then
-                local personaje = jugador.Character
-                if not skeletons[personaje] then
-                    crearEsqueleto(personaje)
-                end
-
-                local lineas = skeletons[personaje]
-                if lineas then
-                    for i, con in ipairs(conexiones) do
-                        local linea = lineas[i]
-                        if linea then
-                            local a = personaje:FindFirstChild(con[1])
-                            local b = personaje:FindFirstChild(con[2])
-                            if a and b then
-                                local pa, onA = cam:WorldToViewportPoint(a.Position)
-                                local pb, onB = cam:WorldToViewportPoint(b.Position)
-                                if onA and onB then
-                                    dibujarLinea(linea, Vector2.new(pa.X, pa.Y), Vector2.new(pb.X, pb.Y))
-                                else
-                                    linea.Visible = false
-                                end
-                            else
-                                linea.Visible = false
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-end)
-
-Players.PlayerRemoving:Connect(function(jugador)
-    local hl = espFolder:FindFirstChild("WallhackHL_" .. jugador.Name)
-    if hl then hl:Destroy() end
-    local sk = espFolder:FindFirstChild("Skeleton_" .. jugador.Name)
-    if sk then sk:Destroy() end
-end)
-
-return RyzeCodeHub
+        if opt ==
