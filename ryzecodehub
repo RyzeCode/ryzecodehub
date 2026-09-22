@@ -8,11 +8,11 @@ RyzeCodeHub.Version = "1.0.0"
 RyzeCodeHub.Name = "RyzeCodeHub"
 
 -- ============================
--- COLORES (BARRA AZUL + RESTO GRIS OSCURO)
+-- COLORES (BARRA AZUL OSCURO + RESTO GRIS OSCURO)
 -- ============================
 local Colors = {
     Background   = Color3.fromRGB(35, 35, 40),
-    TitleBar     = Color3.fromRGB(30, 144, 255),
+    TitleBar     = Color3.fromRGB(20, 60, 120),
     TabList      = Color3.fromRGB(28, 28, 32),
     TabActive    = Color3.fromRGB(55, 55, 65),
     TabInactive  = Color3.fromRGB(28, 28, 32),
@@ -21,12 +21,12 @@ local Colors = {
     ButtonHover  = Color3.fromRGB(70, 70, 85),
     TextDark     = Color3.fromRGB(230, 230, 240),
     TextLight    = Color3.fromRGB(255, 255, 255),
-    Minimize     = Color3.fromRGB(255, 200, 80),
-    MinimizeHover= Color3.fromRGB(255, 170, 40),
-    Close        = Color3.fromRGB(255, 90, 90),
-    CloseHover   = Color3.fromRGB(255, 50, 50),
-    Bubble       = Color3.fromRGB(30, 144, 255),
-    BubbleHover  = Color3.fromRGB(60, 170, 255),
+    Minimize     = Color3.fromRGB(50, 50, 60),
+    MinimizeHover= Color3.fromRGB(70, 70, 85),
+    Close        = Color3.fromRGB(50, 50, 60),
+    CloseHover   = Color3.fromRGB(200, 60, 60),
+    Bubble       = Color3.fromRGB(20, 60, 120),
+    BubbleHover  = Color3.fromRGB(30, 90, 170),
 }
 
 -- ============================
@@ -81,7 +81,7 @@ function RyzeCodeHub:CreateWindow(config)
     title.Font = Enum.Font.GothamBold
     title.Parent = titleBar
 
-    -- Botón minimizar
+    -- Botón minimizar (gris, texto blanco)
     local minimizeBtn = Instance.new("TextButton")
     minimizeBtn.Name = "MinimizeBtn"
     minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
@@ -89,7 +89,7 @@ function RyzeCodeHub:CreateWindow(config)
     minimizeBtn.BackgroundColor3 = Colors.Minimize
     minimizeBtn.BorderSizePixel = 0
     minimizeBtn.Text = "—"
-    minimizeBtn.TextColor3 = Color3.fromRGB(20, 40, 80)
+    minimizeBtn.TextColor3 = Colors.TextLight
     minimizeBtn.TextSize = 20
     minimizeBtn.Font = Enum.Font.GothamBold
     minimizeBtn.Parent = titleBar
@@ -98,7 +98,7 @@ function RyzeCodeHub:CreateWindow(config)
     minCorner.CornerRadius = UDim.new(0, 6)
     minCorner.Parent = minimizeBtn
 
-    -- Botón cerrar
+    -- Botón cerrar (gris, texto blanco)
     local closeBtn = Instance.new("TextButton")
     closeBtn.Name = "CloseBtn"
     closeBtn.Size = UDim2.new(0, 30, 0, 30)
