@@ -50,6 +50,8 @@ local Colors = {
     HealthRed    = Color3.fromRGB(220, 60, 60),
     HealthBg     = Color3.fromRGB(40, 40, 45),
     Wallhack     = Color3.fromRGB(30, 144, 255),
+    Execute      = Color3.fromRGB(60, 180, 80),
+    ExecuteHover = Color3.fromRGB(80, 220, 100),
 }
 
 -- ============================
@@ -326,7 +328,6 @@ function RyzeCodeHub:CreateWindow(config)
         for _, fn in ipairs(cleanupFunctions) do
             pcall(fn)
         end
-
         screenGui:Destroy()
         espGui:Destroy()
     end)
@@ -762,6 +763,203 @@ function RyzeCodeHub:CreateWindow(config)
             return button, function() return currentKey end
         end
 
+        -- ============================
+        -- BOTÓN SIMPLE
+        -- ============================
+        function Tab:CreateButton(buttonConfig)
+            buttonConfig = buttonConfig or {}
+            local buttonName = buttonConfig.Name or "Button"
+            local callback = buttonConfig.Callback or function() end
+            local order = buttonConfig.Order or 0
+
+            local button = Instance.new("TextButton")
+            button.Name = "Button_" .. buttonName
+            button.Size = UDim2.new(1, -16, 0, 32)
+            button.BackgroundColor3 = Colors.Button
+            button.BorderSizePixel = 0
+            button.Text = buttonName
+            button.TextColor3 = Colors.TextDark
+            button.TextSize = 14
+            button.Font = Enum.Font.Gotham
+            button.ZIndex = 8
+            button.LayoutOrder = order
+            button.Parent = tabContent
+
+            local btnCorner = Instance.new("UICorner")
+            btnCorner.CornerRadius = UDim.new(0, 6)
+            btnCorner.Parent = button
+
+            button.MouseEnter:Connect(function()
+                button.BackgroundColor3 = Colors.ButtonHover
+            end)
+            button.MouseLeave:Connect(function()
+                button.BackgroundColor3 = Colors.Button
+            end)
+            button.MouseButton1Click:Connect(function()
+                pcall(callback)
+            end)
+
+            return button
+        end
+
+        -- ============================
+        -- FILA: DROPDOWN + BOTÓN EXECUTE A LA DERECHA
+        -- ============================
+        function Tab:CreateDropdownWithButton(config)
+            config = config or {}
+            local name = config.Name or "Bypass"
+            local options = config.Options or {}
+            local currentOption = config.CurrentOption or options[1]
+            local dropdownCallback = config.DropdownCallback or function() end
+            local buttonCallback = config.ButtonCallback or function() end
+            local order = config.Order or 0
+
+            -- Contenedor de la fila
+            local row = Instance.new("Frame")
+            row.Name = "Row_" .. name
+            row.Size = UDim2.new(1, -16, 0, 32)
+            row.BackgroundTransparency = 1
+            row.BorderSizePixel = 0
+            row.ZIndex = 8
+            row.LayoutOrder = order
+            row.Parent = tabContent
+
+            -- Dropdown (izquierda)
+            local dropdown = Instance.new("TextButton")
+            dropdown.Name = "Dropdown"
+            dropdown.Size = UDim2.new(1, -80, 1, 0)
+            dropdown.Position = UDim2.new(0, 0, 0, 0)
+            dropdown.BackgroundColor3 = Colors.Button
+            dropdown.BorderSizePixel = 0
+            dropdown.Text = ""
+            dropdown.AutoButtonColor = false
+            dropdown.ZIndex = 9
+            dropdown.Parent = row
+
+            local dropCorner = Instance.new("UICorner")
+            dropCorner.CornerRadius = UDim.new(0, 6)
+            dropCorner.Parent = dropdown
+
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, -30, 1, 0)
+            label.Position = UDim2.new(0, 10, 0, 0)
+            label.BackgroundTransparency = 1
+            label.Text = tostring(currentOption)
+            label.TextColor3 = Colors.TextDark
+            label.TextSize = 14
+            label.Font = Enum.Font.Gotham
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.ZIndex = 10
+            label.Parent = dropdown
+
+            local arrow = Instance.new("TextLabel")
+            arrow.Size = UDim2.new(0, 20, 1, 0)
+            arrow.Position = UDim2.new(1, -25, 0, 0)
+            arrow.BackgroundTransparency = 1
+            arrow.Text = "▼"
+            arrow.TextColor3 = Colors.TextDark
+            arrow.TextSize = 12
+            arrow.Font = Enum.Font.GothamBold
+            arrow.ZIndex = 10
+            arrow.Parent = dropdown
+
+            -- Botón Execute (derecha)
+            local execBtn = Instance.new("TextButton")
+            execBtn.Name = "Execute"
+            execBtn.Size = UDim2.new(0, 70, 1, 0)
+            execBtn.Position = UDim2.new(1, -70, 0, 0)
+            execBtn.BackgroundColor3 = Colors.Execute
+            execBtn.BorderSizePixel = 0
+            execBtn.Text = "EXECUTE"
+            execBtn.TextColor3 = Colors.TextLight
+            execBtn.TextSize = 12
+            execBtn.Font = Enum.Font.GothamBold
+            execBtn.ZIndex = 9
+            execBtn.Parent = row
+
+            local execCorner = Instance.new("UICorner")
+            execCorner.CornerRadius = UDim.new(0, 6)
+            execCorner.Parent = execBtn
+
+            -- Lista de opciones (fuera del ScrollingFrame para no ser recortada)
+            local optionList = Instance.new("Frame")
+            optionList.Name = "OptionList_" .. name
+            optionList.Size = UDim2.new(0, dropdown.AbsoluteSize.X, 0, #options * 28)
+            optionList.BackgroundColor3 = Colors.DropdownBg
+            optionList.BorderSizePixel = 0
+            optionList.Visible = false
+            optionList.ZIndex = 100
+            optionList.Parent = screenGui
+
+            local listCorner = Instance.new("UICorner")
+            listCorner.CornerRadius = UDim.new(0, 6)
+            listCorner.Parent = optionList
+
+            local listLayout = Instance.new("UIListLayout")
+            listLayout.Parent = optionList
+
+            for _, opt in ipairs(options) do
+                local optButton = Instance.new("TextButton")
+                optButton.Size = UDim2.new(1, 0, 0, 28)
+                optButton.BackgroundColor3 = Colors.DropdownBg
+                optButton.BorderSizePixel = 0
+                optButton.Text = tostring(opt)
+                optButton.TextColor3 = Colors.TextDark
+                optButton.TextSize = 14
+                optButton.Font = Enum.Font.Gotham
+                optButton.ZIndex = 101
+                optButton.Parent = optionList
+
+                optButton.MouseEnter:Connect(function()
+                    optButton.BackgroundColor3 = Colors.DropdownHover
+                end)
+                optButton.MouseLeave:Connect(function()
+                    optButton.BackgroundColor3 = Colors.DropdownBg
+                end)
+                optButton.MouseButton1Click:Connect(function()
+                    currentOption = opt
+                    label.Text = tostring(opt)
+                    optionList.Visible = false
+                    pcall(dropdownCallback, opt)
+                end)
+            end
+
+            dropdown.MouseButton1Click:Connect(function()
+                if optionList.Visible then
+                    optionList.Visible = false
+                    return
+                end
+
+                local absPos = row.AbsolutePosition
+                local absSize = dropdown.AbsoluteSize
+                local listHeight = #options * 28
+                local screenHeight = screenGui.AbsoluteSize.Y
+
+                optionList.Size = UDim2.new(0, absSize.X, 0, listHeight)
+
+                if absPos.Y + absSize.Y + listHeight < screenHeight then
+                    optionList.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 4)
+                else
+                    optionList.Position = UDim2.new(0, absPos.X, 0, absPos.Y - listHeight - 4)
+                end
+
+                optionList.Visible = true
+            end)
+
+            -- Hover del botón execute
+            execBtn.MouseEnter:Connect(function()
+                execBtn.BackgroundColor3 = Colors.ExecuteHover
+            end)
+            execBtn.MouseLeave:Connect(function()
+                execBtn.BackgroundColor3 = Colors.Execute
+            end)
+            execBtn.MouseButton1Click:Connect(function()
+                pcall(buttonCallback, currentOption)
+            end)
+
+            return row
+        end
+
         tabs[#tabs + 1] = { Button = tabButton, Content = tabContent }
 
         tabButton.MouseButton1Click:Connect(function()
@@ -837,9 +1035,18 @@ local flyEnabled = false
 local flyActive = false
 local flySpeed = 50
 local flyKey = "E"
+local flyBypassMode = "ANCHOR"
 local noclipEnabled = false
 local noclipActive = false
 local noclipKey = "V"
+
+-- Objetos de vuelo actuales
+local flyHRP = nil
+local flyBV = nil
+local flyBG = nil
+local flyLV = nil
+local flyPlatform = nil
+local flyAlignPos = nil
 
 -- ============================
 -- AIM: CONTROLES
@@ -995,10 +1202,13 @@ MiscTab:CreateToggle({
         flyEnabled = valor
         if not valor then
             flyActive = false
-            if LocalPlayer.Character then
-                local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if hrp then hrp.Anchored = false end
-            end
+            -- Limpiamos los métodos de vuelo
+            if flyHRP then flyHRP.Anchored = false end
+            if flyBV then flyBV:Destroy() flyBV = nil end
+            if flyBG then flyBG:Destroy() flyBG = nil end
+            if flyLV then flyLV:Destroy() flyLV = nil end
+            if flyAlignPos then flyAlignPos:Destroy() flyAlignPos = nil end
+            if flyPlatform then flyPlatform:Destroy() flyPlatform = nil end
         end
     end
 })
@@ -1013,8 +1223,83 @@ MiscTab:CreateSlider({
     Callback = function(valor) flySpeed = valor end
 })
 
+-- FILA: SELECTOR DE BYPASS + BOTÓN EXECUTE
+MiscTab:CreateDropdownWithButton({
+    Name = "Fly Bypass",
+    Options = {
+        "ANCHOR",
+        "BODYVELOCITY",
+        "LINEARVELOCITY",
+        "CFRAME",
+        "PLATFORM"
+    },
+    CurrentOption = "ANCHOR",
+    Order = 5,
+    DropdownCallback = function(opt)
+        flyBypassMode = opt
+    end,
+    ButtonCallback = function(opt)
+        -- Limpiamos todo método anterior
+        if flyHRP then flyHRP.Anchored = false end
+        if flyBV then flyBV:Destroy() flyBV = nil end
+        if flyBG then flyBG:Destroy() flyBG = nil end
+        if flyLV then flyLV:Destroy() flyLV = nil end
+        if flyAlignPos then flyAlignPos:Destroy() flyAlignPos = nil end
+        if flyPlatform then flyPlatform:Destroy() flyPlatform = nil end
+
+        local personaje = LocalPlayer.Character
+        if not personaje then return end
+        local hrp = personaje:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        if opt == "ANCHOR" then
+            -- Método 1: Anclar HRP
+            print("[Ryze.xyz] Bypass: ANCHOR aplicado")
+        elseif opt == "BODYVELOCITY" then
+            -- Método 2: BodyVelocity + BodyGyro
+            flyBV = Instance.new("BodyVelocity")
+            flyBV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+            flyBV.Velocity = Vector3.new(0, 0, 0)
+            flyBV.Parent = hrp
+
+            flyBG = Instance.new("BodyGyro")
+            flyBG.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
+            flyBG.P = 1000
+            flyBG.D = 50
+            flyBG.Parent = hrp
+            print("[Ryze.xyz] Bypass: BODYVELOCITY aplicado")
+        elseif opt == "LINEARVELOCITY" then
+            -- Método 3: LinearVelocity + AlignOrientation
+            flyLV = Instance.new("LinearVelocity")
+            flyLV.MaxForce = math.huge
+            flyLV.VectorVelocity = Vector3.new(0, 0, 0)
+            flyLV.Parent = hrp
+
+            flyAlignPos = Instance.new("AlignOrientation")
+            flyAlignPos.MaxTorque = math.huge
+            flyAlignPos.PrimaryAxisOnly = false
+            flyAlignPos.Parent = hrp
+            print("[Ryze.xyz] Bypass: LINEARVELOCITY aplicado")
+        elseif opt == "CFRAME" then
+            -- Método 4: CFrame directo (el más detectable)
+            print("[Ryze.xyz] Bypass: CFRAME aplicado")
+        elseif opt == "PLATFORM" then
+            -- Método 5: Plataforma invisible debajo de ti
+            flyPlatform = Instance.new("Part")
+            flyPlatform.Name = "RyzeFlyPlatform"
+            flyPlatform.Size = Vector3.new(6, 1, 6)
+            flyPlatform.Position = hrp.Position - Vector3.new(0, 3, 0)
+            flyPlatform.Anchored = true
+            flyPlatform.CanCollide = true
+            flyPlatform.Transparency = 1
+            flyPlatform.Parent = workspace
+            print("[Ryze.xyz] Bypass: PLATFORM aplicado")
+        end
+    end
+})
+
 MiscTab:CreateToggle({
-    Name = "Noclip", CurrentValue = false, Order = 5,
+    Name = "Noclip", CurrentValue = false, Order = 6,
     Callback = function(valor)
         noclipEnabled = valor
         if not valor then
@@ -1031,7 +1316,7 @@ MiscTab:CreateToggle({
 })
 
 MiscTab:CreateKeybind({
-    Name = "Noclip Key", DefaultKey = "V", Order = 6,
+    Name = "Noclip Key", DefaultKey = "V", Order = 7,
     Callback = function(nombre, input) noclipKey = nombre end
 })
 
@@ -1049,40 +1334,30 @@ local function estaMuerto(personaje)
     return false
 end
 
-local function checkManual(jugador)
-    return aliados[jugador.Name] == true
-end
-
+local function checkManual(jugador) return aliados[jugador.Name] == true end
 local function checkTeam(jugador)
     if not LocalPlayer.Team or not jugador.Team then return false end
     return jugador.Team == LocalPlayer.Team
 end
-
 local function checkTeamColor(jugador)
     if not LocalPlayer.TeamColor or not jugador.TeamColor then return false end
     return jugador.TeamColor == LocalPlayer.TeamColor
 end
-
 local function checkBodyColor(jugador)
     if jugador == LocalPlayer then return true end
     if not jugador.Character or not LocalPlayer.Character then return false end
     local bcLocal = LocalPlayer.Character:FindFirstChildOfClass("BodyColors")
     local bcOtro = jugador.Character:FindFirstChildOfClass("BodyColors")
     if not bcLocal or not bcOtro then return false end
-    return bcLocal.TorsoColor3 == bcOtro.TorsoColor3
-        and bcLocal.HeadColor3 == bcOtro.HeadColor3
+    return bcLocal.TorsoColor3 == bcOtro.TorsoColor3 and bcLocal.HeadColor3 == bcOtro.HeadColor3
 end
 
 local function esDelMismoEquipo(jugador)
     if checkManual(jugador) then return true end
-    if teamCheckMode == "MANUAL" then
-        return false
-    elseif teamCheckMode == "TEAM" then
-        return checkTeam(jugador)
-    elseif teamCheckMode == "TEAMCOLOR" then
-        return checkTeamColor(jugador)
-    elseif teamCheckMode == "BODYCOLOR" then
-        return checkBodyColor(jugador)
+    if teamCheckMode == "MANUAL" then return false
+    elseif teamCheckMode == "TEAM" then return checkTeam(jugador)
+    elseif teamCheckMode == "TEAMCOLOR" then return checkTeamColor(jugador)
+    elseif teamCheckMode == "BODYCOLOR" then return checkBodyColor(jugador)
     else
         if checkTeam(jugador) then return true end
         if checkTeamColor(jugador) then return true end
@@ -1158,10 +1433,8 @@ local function obtenerJugadorCercano(forzarCabeza, ignorarParedes)
 end
 
 -- ============================
--- AIMBOT MEJORADO (con memoria de objetivo)
+-- AIMBOT CON MEMORIA
 -- ============================
--- Guardamos el último objetivo conocido y su posición.
--- Si un frame no encontramos objetivo, seguimos apuntando al último durante X frames.
 local ultimoObjetivo = nil
 local ultimoObjetivoPos = nil
 local ultimoObjetivoContador = 0
@@ -1180,19 +1453,14 @@ addConn(RunService.RenderStepped:Connect(function()
         ultimoObjetivoContador = 0
         return
     end
-
     local cam = workspace.CurrentCamera
     if not cam then return end
-
     local objetivo = obtenerJugadorCercano(false, magicBulletEnabled)
-
     if objetivo then
-        -- Encontramos objetivo, actualizamos
         ultimoObjetivo = objetivo
         ultimoObjetivoPos = objetivo.Position
         ultimoObjetivoContador = 0
     else
-        -- No encontramos objetivo, usamos el último durante X frames
         if ultimoObjetivo and ultimoObjetivo.Parent then
             ultimoObjetivoContador = ultimoObjetivoContador + 1
             if ultimoObjetivoContador <= MAX_FRAMES_SIN_OBJETIVO then
@@ -1207,8 +1475,6 @@ addConn(RunService.RenderStepped:Connect(function()
             return
         end
     end
-
-    -- Calculamos el punto objetivo actual
     local targetPos
     if objetivo.Parent then
         targetPos = objetivo.Position
@@ -1217,24 +1483,13 @@ addConn(RunService.RenderStepped:Connect(function()
     else
         return
     end
-
-    -- Origen del aimbot: usamos el HumanoidRootPart en lugar de la cámara
-    -- Esto hace que el aimbot no dependa del movimiento de la cámara (Fly)
     local origen
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        origen = hrp.Position
-    else
-        origen = cam.CFrame.Position
-    end
-
+    if hrp then origen = hrp.Position else origen = cam.CFrame.Position end
     local factor = 1 - (smoothValue / 100)
     factor = math.clamp(factor, 0.03, 1)
-
-    -- Calculamos la nueva CFrame basada en el origen, no en la posición de la cámara
     local direccion = (targetPos - origen).Unit
     local targetCFrame = CFrame.lookAt(cam.CFrame.Position, cam.CFrame.Position + direccion)
-
     cam.CFrame = cam.CFrame:Lerp(targetCFrame, factor)
 end))
 
@@ -1528,31 +1783,64 @@ addConn(RunService.RenderStepped:Connect(function()
     end
 end))
 
--- FLY
+-- ============================
+-- FLY CON MÚLTIPLES BYPASSES
+-- ============================
 addConn(RunService.RenderStepped:Connect(function()
     if not flyEnabled then return end
     local personaje = LocalPlayer.Character
     if not personaje then return end
     local hrp = personaje:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-    if not flyActive then
-        if hrp.Anchored then hrp.Anchored = false end
-        return
-    end
-    hrp.Anchored = true
+
     local cam = workspace.CurrentCamera
     if not cam then return end
-    local direccion = Vector3.new(0, 0, 0)
+
     local velocidad = flySpeed / 10
+
+    -- Calculamos la dirección según el método
+    local direccion = Vector3.new(0, 0, 0)
     if UserInputService:IsKeyDown(Enum.KeyCode.W) then direccion = direccion + cam.CFrame.LookVector end
     if UserInputService:IsKeyDown(Enum.KeyCode.S) then direccion = direccion - cam.CFrame.LookVector end
     if UserInputService:IsKeyDown(Enum.KeyCode.A) then direccion = direccion - cam.CFrame.RightVector end
     if UserInputService:IsKeyDown(Enum.KeyCode.D) then direccion = direccion + cam.CFrame.RightVector end
     if UserInputService:IsKeyDown(Enum.KeyCode.Space) then direccion = direccion + Vector3.new(0, 1, 0) end
     if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then direccion = direccion - Vector3.new(0, 1, 0) end
-    if direccion.Magnitude > 0 then
-        direccion = direccion.Unit * velocidad
-        hrp.CFrame = hrp.CFrame + direccion
+    if direccion.Magnitude > 0 then direccion = direccion.Unit * velocidad end
+
+    -- Aplicamos según el modo
+    if flyBypassMode == "ANCHOR" then
+        if flyActive then
+            hrp.Anchored = true
+            hrp.CFrame = hrp.CFrame + direccion
+        else
+            hrp.Anchored = false
+        end
+    elseif flyBypassMode == "BODYVELOCITY" then
+        if flyActive and flyBV and flyBG then
+            flyBV.Velocity = direccion
+            flyBG.CFrame = cam.CFrame
+        else
+            if flyBV then flyBV.Velocity = Vector3.new(0, 0, 0) end
+        end
+    elseif flyBypassMode == "LINEARVELOCITY" then
+        if flyActive and flyLV then
+            flyLV.VectorVelocity = direccion
+        else
+            if flyLV then flyLV.VectorVelocity = Vector3.new(0, 0, 0) end
+        end
+    elseif flyBypassMode == "CFRAME" then
+        if flyActive then
+            hrp.CFrame = hrp.CFrame + direccion
+        end
+    elseif flyBypassMode == "PLATFORM" then
+        if flyActive and flyPlatform then
+            flyPlatform.Position = flyPlatform.Position + direccion
+            -- Si el personaje se aleja de la plataforma, lo teletransportamos encima
+            if (hrp.Position - flyPlatform.Position).Magnitude > 8 then
+                hrp.CFrame = CFrame.new(flyPlatform.Position + Vector3.new(0, 3, 0))
+            end
+        end
     end
 end))
 
@@ -1585,15 +1873,15 @@ local function quitarNoclip()
 end
 
 addConn(RunService.Stepped:Connect(function()
-    if noclipActive then
-        aplicarNoclip()
-    end
+    if noclipActive then aplicarNoclip() end
 end))
 
 addConn(LocalPlayer.CharacterAdded:Connect(function()
     noclipActive = false
+    flyActive = false
     task.wait(0.5)
     quitarNoclip()
+    if flyPlatform then flyPlatform:Destroy() flyPlatform = nil end
 end))
 
 addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -1602,9 +1890,7 @@ addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if input.UserInputType == Enum.UserInputType.Keyboard then nombre = input.KeyCode.Name end
     if nombre == noclipKey and noclipEnabled then
         noclipActive = not noclipActive
-        if not noclipActive then
-            quitarNoclip()
-        end
+        if not noclipActive then quitarNoclip() end
     end
 end))
 
@@ -1632,9 +1918,13 @@ addCleanup(function()
     if AutoWindow._fovCircle then
         AutoWindow._fovCircle.Visible = false
     end
+    if flyHRP then flyHRP.Anchored = false end
+    if flyBV then flyBV:Destroy() end
+    if flyBG then flyBG:Destroy() end
+    if flyLV then flyLV:Destroy() end
+    if flyAlignPos then flyAlignPos:Destroy() end
+    if flyPlatform then flyPlatform:Destroy() end
     if LocalPlayer.Character then
-        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then hrp.Anchored = false end
         for _, parte in ipairs(LocalPlayer.Character:GetDescendants()) do
             if parte:IsA("BasePart") then
                 pcall(function() parte.CanCollide = true end)
