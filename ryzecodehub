@@ -40,7 +40,7 @@ local Colors = {
 }
 
 -- ============================
--- UTILIDAD: nombres de teclas bonitos
+-- UTILIDAD: nombres de teclas
 -- ============================
 local function keyName(userInputType)
     if userInputType == Enum.UserInputType.MouseButton1 then return "Clic Izquierdo" end
@@ -246,6 +246,11 @@ function RyzeCodeHub:CreateWindow(config)
         local diametro = math.clamp(fovValue * 6, 120, 720)
         fovCircle.Size = UDim2.new(0, diametro, 0, diametro)
     end
+
+    -- Capa de dibujo para ESP (una sola, para todos los jugadores)
+    local espFolder = Instance.new("Folder")
+    espFolder.Name = "RyzeESP"
+    espFolder.Parent = screenGui
 
     local Window = {}
     local tabs = {}
@@ -683,6 +688,7 @@ function RyzeCodeHub:CreateWindow(config)
 
     Window._actualizarFovCircle = actualizarFovCircle
     Window._fovCircle = fovCircle
+    Window._espFolder = espFolder
 
     return Window
 end
@@ -691,17 +697,27 @@ end
 -- AUTO-SETUP
 -- ============================
 local AutoWindow = RyzeCodeHub:CreateWindow({ Name = "Ryze.xyz" })
-local AutoTab = AutoWindow:CreateTab("AIM")
+local AimTab = AutoWindow:CreateTab("AIM")
+local EspTab = AutoWindow:CreateTab("ESP")
 
+-- Estado del AIM
 local aimbotEnabled = false
 local fovValue = 70
 local aimDistance = 600
 local toggleKey = "F"
 local aimActive = false
-local boneAim = "HEAD"       -- HEAD o BODY
-local targetDead = false     -- si apuntar a muertos o no
+local boneAim = "HEAD"
+local targetDead = false
 
-AutoTab:CreateToggle({
+-- Estado del ESP
+local espFolder = AutoWindow._espFolder
+local wallhackEnabled = false
+local skeletonEnabled = false
+
+-- ============================
+-- AIM: CONTROLES
+-- ============================
+AimTab:CreateToggle({
     Name = "Aimbot",
     CurrentValue = false,
     Callback = function(valor)
@@ -710,7 +726,7 @@ AutoTab:CreateToggle({
     end
 })
 
-AutoTab:CreateSlider({
+AimTab:CreateSlider({
     Name = "FOV",
     Min = 1,
     Max = 120,
@@ -723,7 +739,7 @@ AutoTab:CreateSlider({
     end
 })
 
-AutoTab:CreateToggle({
+AimTab:CreateToggle({
     Name = "Show FOV",
     CurrentValue = false,
     Callback = function(valor)
@@ -733,23 +749,19 @@ AutoTab:CreateToggle({
     end
 })
 
-AutoTab:CreateDropdown({
+AimTab:CreateDropdown({
     Name = "AIM DISTANCE",
     Options = { "200M", "600M", "1000M" },
     CurrentOption = "600M",
     Callback = function(opt)
-        if opt == "200M" then
-            aimDistance = 200
-        elseif opt == "600M" then
-            aimDistance = 600
-        elseif opt == "1000M" then
-            aimDistance = 1000
-        end
+        if opt == "200M" then aimDistance = 200
+        elseif opt == "600M" then aimDistance = 600
+        elseif opt == "1000M" then aimDistance = 1000 end
         print("[Ryze.xyz] AIM DISTANCE:", opt)
     end
 })
 
-AutoTab:CreateDropdown({
+AimTab:CreateDropdown({
     Name = "BONE AIM",
     Options = { "HEAD", "BODY" },
     CurrentOption = "HEAD",
@@ -759,7 +771,7 @@ AutoTab:CreateDropdown({
     end
 })
 
-AutoTab:CreateToggle({
+AimTab:CreateToggle({
     Name = "TARGET DEAD",
     CurrentValue = false,
     Callback = function(valor)
@@ -768,7 +780,7 @@ AutoTab:CreateToggle({
     end
 })
 
-AutoTab:CreateKeybind({
+AimTab:CreateKeybind({
     Name = "TOGGLE AIM",
     DefaultKey = "F",
     Callback = function(nombre, input)
@@ -778,14 +790,52 @@ AutoTab:CreateKeybind({
 })
 
 -- ============================
--- LÓGICA DEL AIMBOT
+-- ESP: CONTROLES
+-- ============================
+EspTab:CreateToggle({
+    Name = "Wallhack",
+    CurrentValue = false,
+    Callback = function(valor)
+        wallhackEnabled = valor
+        print("[Ryze.xyz] Wallhack:", valor)
+        if not valor then
+            -- Limpiamos los highlights
+            for _, hijo in ipairs(espFolder:GetChildren()) do
+                if hijo.Name:sub(1, 13) == "WallhackHL_" then
+                    hijo:Destroy()
+                end
+            end
+        end
+    end
+})
+
+EspTab:CreateToggle({
+    Name = "Skeleton",
+    CurrentValue = false,
+    Callback = function(valor)
+        skeletonEnabled = valor
+        print("[Ryze.xyz] Skeleton:", valor)
+        if not valor then
+            -- Limpiamos los esqueletos
+            for _, hijo in ipairs(espFolder:GetChildren()) do
+                if hijo.Name:sub(1, 12) == "SkeletonLine" or hijo:IsA("Line") then
+                    hijo:Destroy()
+                elseif hijo:IsA("Folder") then
+                    hijo:Destroy()
+                end
+            end
+        end
+    end
+})
+
+-- ============================
+-- AIM: LÓGICA
 -- ============================
 local function obtenerPuntoObjetivo(personaje)
     if boneAim == "HEAD" then
         local cabeza = personaje:FindFirstChild("Head")
         if cabeza then return cabeza end
     end
-    -- BODY o fallback
     return personaje:FindFirstChild("HumanoidRootPart") or personaje:FindFirstChild("UpperTorso") or personaje:FindFirstChild("Torso")
 end
 
@@ -805,10 +855,7 @@ local function obtenerJugadorCercano()
             if personaje then
                 local humanoide = personaje:FindFirstChildOfClass("Humanoid")
                 if humanoide then
-                    -- Comprobar si está muerto
-                    if humanoide.Health <= 0 and not targetDead then
-                        continue
-                    end
+                    if humanoide.Health <= 0 and not targetDead then continue end
 
                     local puntoObjetivo = obtenerPuntoObjetivo(personaje)
                     if puntoObjetivo then
@@ -837,13 +884,10 @@ end
 local function apuntarAlObjetivo(punto)
     local cam = workspace.CurrentCamera
     if not cam or not punto then return end
-
-    -- Cambio suave de la cámara (lerp) para evitar temblores
     local objetivoCFrame = CFrame.new(cam.CFrame.Position, punto.Position)
     cam.CFrame = cam.CFrame:Lerp(objetivoCFrame, 0.35)
 end
 
--- Bucle del aimbot
 RunService.RenderStepped:Connect(function()
     if not aimbotEnabled or not aimActive then return end
     local objetivo = obtenerJugadorCercano()
@@ -852,16 +896,12 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Detectar la tecla configurada
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     local nombre = keyName(input.UserInputType)
     if input.UserInputType == Enum.UserInputType.Keyboard then
         nombre = input.KeyCode.Name
     end
-
-    if nombre == toggleKey then
-        aimActive = true
-    end
+    if nombre == toggleKey then aimActive = true end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
@@ -869,10 +909,147 @@ UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Keyboard then
         nombre = input.KeyCode.Name
     end
+    if nombre == toggleKey then aimActive = false end
+end)
 
-    if nombre == toggleKey then
-        aimActive = false
+-- ============================
+-- ESP: LÓGICA
+-- ============================
+
+-- Crea el Highlight para el wallhack
+local function crearHighlight(personaje)
+    local nombre = "WallhackHL_" .. personaje.Name
+    local existente = espFolder:FindFirstChild(nombre)
+    if existente then return existente end
+
+    local hl = Instance.new("Highlight")
+    hl.Name = nombre
+    hl.Adornee = personaje
+    hl.FillColor = Color3.fromRGB(30, 144, 255)
+    hl.FillTransparency = 0.5
+    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+    hl.OutlineTransparency = 0
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.Parent = espFolder
+    return hl
+end
+
+-- Crea las líneas del esqueleto
+local function crearEsqueleto(personaje)
+    local nombre = "Skeleton_" .. personaje.Name
+    local existente = espFolder:FindFirstChild(nombre)
+    if existente then return existente end
+
+    local carpeta = Instance.new("Folder")
+    carpeta.Name = nombre
+    carpeta.Parent = espFolder
+
+    -- Definimos las conexiones entre huesos (por nombre de parte)
+    local conexiones = {
+        {"Head", "UpperTorso"},
+        {"UpperTorso", "LowerTorso"},
+        {"LowerTorso", "LeftUpperLeg"},
+        {"LowerTorso", "RightUpperLeg"},
+        {"LeftUpperLeg", "LeftLowerLeg"},
+        {"RightUpperLeg", "RightLowerLeg"},
+        {"UpperTorso", "LeftUpperArm"},
+        {"UpperTorso", "RightUpperArm"},
+        {"LeftUpperArm", "LeftLowerArm"},
+        {"RightUpperArm", "RightLowerArm"},
+        -- Fallback para R6
+        {"Head", "Torso"},
+        {"Torso", "Left Leg"},
+        {"Torso", "Right Leg"},
+        {"Torso", "Left Arm"},
+        {"Torso", "Right Arm"},
+    }
+
+    for i, con in ipairs(conexiones) do
+        local linea = Instance.new("Line")
+        linea.Name = "SkeletonLine" .. i
+        linea.Color = Color3.fromRGB(30, 144, 255)
+        linea.Thickness = 2
+        linea.Transparency = 0
+        linea.Parent = carpeta
     end
+
+    return carpeta
+end
+
+-- Actualiza las posiciones de las líneas del esqueleto
+local function actualizarEsqueleto(personaje)
+    local carpeta = espFolder:FindFirstChild("Skeleton_" .. personaje.Name)
+    if not carpeta then return end
+
+    local cam = workspace.CurrentCamera
+    if not cam then return end
+
+    local conexiones = {
+        {"Head", "UpperTorso"},
+        {"UpperTorso", "LowerTorso"},
+        {"LowerTorso", "LeftUpperLeg"},
+        {"LowerTorso", "RightUpperLeg"},
+        {"LeftUpperLeg", "LeftLowerLeg"},
+        {"RightUpperLeg", "RightLowerLeg"},
+        {"UpperTorso", "LeftUpperArm"},
+        {"UpperTorso", "RightUpperArm"},
+        {"LeftUpperArm", "LeftLowerArm"},
+        {"RightUpperArm", "RightLowerArm"},
+        {"Head", "Torso"},
+        {"Torso", "Left Leg"},
+        {"Torso", "Right Leg"},
+        {"Torso", "Left Arm"},
+        {"Torso", "Right Arm"},
+    }
+
+    for i, con in ipairs(conexiones) do
+        local linea = carpeta:FindFirstChild("SkeletonLine" .. i)
+        if linea then
+            local parteA = personaje:FindFirstChild(con[1])
+            local parteB = personaje:FindFirstChild(con[2])
+            if parteA and parteB then
+                local posA = cam:WorldToViewportPoint(parteA.Position)
+                local posB = cam:WorldToViewportPoint(parteB.Position)
+                linea.From = Vector2.new(posA.X, posA.Y)
+                linea.To = Vector2.new(posB.X, posB.Y)
+                linea.Visible = true
+            else
+                linea.Visible = false
+            end
+        end
+    end
+end
+
+-- Bucle del ESP (cada frame)
+RunService.RenderStepped:Connect(function()
+    -- WALLHACK
+    if wallhackEnabled then
+        for _, jugador in ipairs(Players:GetPlayers()) do
+            if jugador ~= LocalPlayer and jugador.Character then
+                crearHighlight(jugador.Character)
+            end
+        end
+    end
+
+    -- SKELETON
+    if skeletonEnabled then
+        for _, jugador in ipairs(Players:GetPlayers()) do
+            if jugador ~= LocalPlayer and jugador.Character then
+                if not espFolder:FindFirstChild("Skeleton_" .. jugador.Character.Name) then
+                    crearEsqueleto(jugador.Character)
+                end
+                actualizarEsqueleto(jugador.Character)
+            end
+        end
+    end
+end)
+
+-- Limpiar cuando un jugador muere o sale
+Players.PlayerRemoving:Connect(function(jugador)
+    local hl = espFolder:FindFirstChild("WallhackHL_" .. jugador.Name)
+    if hl then hl:Destroy() end
+    local sk = espFolder:FindFirstChild("Skeleton_" .. jugador.Name)
+    if sk then sk:Destroy() end
 end)
 
 return RyzeCodeHub
