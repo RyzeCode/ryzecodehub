@@ -15,8 +15,8 @@ local LocalPlayer = Players.LocalPlayer
 -- ============================
 -- IDs DE IMÁGENES
 -- ============================
-local ID_LOGO_R = 7077827551269          -- R metálica
-local ID_FONDO_TITLEBAR = 119390880642926 -- Fondo gris metálico
+local ID_LOGO_R = 7077827551269
+local ID_FONDO_TITLEBAR = 119390880642926
 
 -- ============================
 -- COLORES
@@ -107,7 +107,6 @@ function RyzeCodeHub:CreateWindow(config)
     titleBar.ZIndex = 6
     titleBar.Parent = mainFrame
 
-    -- Fondo de la barra de título (imagen gris metálica estirada)
     if ID_FONDO_TITLEBAR and ID_FONDO_TITLEBAR ~= 0 then
         local fondoImagen = Instance.new("ImageLabel")
         fondoImagen.Name = "FondoTitulo"
@@ -192,7 +191,6 @@ function RyzeCodeHub:CreateWindow(config)
     contentFrame.ZIndex = 6
     contentFrame.Parent = mainFrame
 
-    -- Burbuja minimizada (con logo R)
     local bubble = Instance.new("TextButton")
     bubble.Name = "Bubble"
     bubble.Size = UDim2.new(0, 60, 0, 60)
@@ -861,6 +859,7 @@ local espFrame = AutoWindow._espFrame
 local wallhackEnabled = false
 local skeletonEnabled = false
 local showHealthEnabled = false
+local teamCheckEnabled = false
 local skeletons = {}
 local healthBars = {}
 
@@ -1025,6 +1024,27 @@ EspTab:CreateToggle({
     end
 })
 
+EspTab:CreateToggle({
+    Name = "Team Check",
+    CurrentValue = false,
+    Order = 4,
+    Callback = function(valor)
+        teamCheckEnabled = valor
+        -- Limpiamos todos los efectos al cambiar el estado
+        for _, hijo in ipairs(espFrame:GetChildren()) do
+            if hijo.Name:sub(1, 10) == "WallhackHL" then
+                hijo:Destroy()
+            elseif hijo.Name:sub(1, 9) == "Skeleton_" then
+                hijo:Destroy()
+            elseif hijo.Name:sub(1, 10) == "HealthBar_" then
+                hijo:Destroy()
+            end
+        end
+        skeletons = {}
+        healthBars = {}
+    end
+})
+
 -- ============================
 -- MISC: CONTROLES
 -- ============================
@@ -1059,6 +1079,13 @@ local function estaMuerto(personaje)
     end
 
     return false
+end
+
+-- TEAM CHECK: comprueba si el jugador está en tu mismo equipo
+local function esDelMismoEquipo(jugador)
+    if not LocalPlayer.Team then return false end
+    if not jugador.Team then return false end
+    return jugador.Team == LocalPlayer.Team
 end
 
 local function obtenerPuntoObjetivo(personaje, forzarCabeza)
@@ -1118,6 +1145,11 @@ local function obtenerJugadorCercano(forzarCabeza, ignorarParedes)
             local personaje = jugador.Character
             if personaje and personaje.Parent then
                 if estaMuerto(personaje) and not targetDead then
+                    continue
+                end
+
+                -- TEAM CHECK en AIM
+                if teamCheckEnabled and esDelMismoEquipo(jugador) then
                     continue
                 end
 
@@ -1240,6 +1272,13 @@ addConn(RunService.RenderStepped:Connect(function()
     if wallhackEnabled then
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
+                -- TEAM CHECK
+                if teamCheckEnabled and esDelMismoEquipo(jugador) then
+                    local hlViejo = espFrame:FindFirstChild("WallhackHL_" .. jugador.Name)
+                    if hlViejo then hlViejo:Destroy() end
+                    continue
+                end
+
                 local personaje = jugador.Character
                 local hlNombre = "WallhackHL_" .. jugador.Name
                 local hlExistente = espFrame:FindFirstChild(hlNombre)
@@ -1280,6 +1319,14 @@ addConn(RunService.RenderStepped:Connect(function()
 
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
+                -- TEAM CHECK
+                if teamCheckEnabled and esDelMismoEquipo(jugador) then
+                    local skViejo = espFrame:FindFirstChild("Skeleton_" .. jugador.Character.Name)
+                    if skViejo then skViejo:Destroy() end
+                    skeletons[jugador.Character] = nil
+                    continue
+                end
+
                 local personaje = jugador.Character
                 local nombre = "Skeleton_" .. personaje.Name
 
@@ -1348,6 +1395,14 @@ addConn(RunService.RenderStepped:Connect(function()
 
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
+                -- TEAM CHECK
+                if teamCheckEnabled and esDelMismoEquipo(jugador) then
+                    local hbViejo = espFrame:FindFirstChild("HealthBar_" .. jugador.Name)
+                    if hbViejo then hbViejo:Destroy() end
+                    healthBars[jugador] = nil
+                    continue
+                end
+
                 local personaje = jugador.Character
                 local humanoide = personaje:FindFirstChildOfClass("Humanoid")
                 local hrp = personaje:FindFirstChild("HumanoidRootPart")
@@ -1528,6 +1583,7 @@ addCleanup(function()
     wallhackEnabled = false
     skeletonEnabled = false
     showHealthEnabled = false
+    teamCheckEnabled = false
     instantReloadEnabled = false
     aimActive = false
     skeletons = {}
