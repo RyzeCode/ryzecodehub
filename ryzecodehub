@@ -17,7 +17,6 @@ local LocalPlayer = Players.LocalPlayer
 -- ============================
 local aliados = {
     -- ["NombreDeTuAmigo1"] = true,
-    -- ["NombreDeTuAmigo2"] = true,
 }
 
 -- ============================
@@ -834,15 +833,15 @@ local healthBars = {}
 
 local instantReloadEnabled = false
 
--- FLY (toggle con tecla)
-local flyEnabled = false       -- Toggle del menú (permite usar la tecla)
-local flyActive = false        -- Toggle de la tecla (pulsar 1 vez ON, otra OFF)
+-- FLY
+local flyEnabled = false
+local flyActive = false
 local flySpeed = 50
 local flyKey = "E"
 
 -- NOCLIP
-local noclipEnabled = false    -- Toggle del menú
-local noclipActive = false     -- Toggle de la tecla
+local noclipEnabled = false
+local noclipActive = false
 local noclipKey = "V"
 
 -- ============================
@@ -1080,10 +1079,11 @@ MiscTab:CreateToggle({
         noclipEnabled = valor
         if not valor then
             noclipActive = false
+            -- Restauramos la colisión
             if LocalPlayer.Character then
                 for _, parte in ipairs(LocalPlayer.Character:GetDescendants()) do
-                    if parte:IsA("BasePart") and parte.CanCollide then
-                        parte.CanCollide = true
+                    if parte:IsA("BasePart") then
+                        pcall(function() parte.CanCollide = true end)
                     end
                 end
             end
@@ -1256,7 +1256,6 @@ addConn(RunService.RenderStepped:Connect(function()
     end
 end))
 
--- AIM toggle key
 addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     local nombre = keyName(input.UserInputType)
     if input.UserInputType == Enum.UserInputType.Keyboard then
@@ -1593,7 +1592,7 @@ addConn(RunService.RenderStepped:Connect(function()
     end
 end))
 
--- FLY (toggle con tecla)
+-- FLY (toggle)
 addConn(RunService.RenderStepped:Connect(function()
     if not flyEnabled then return end
 
@@ -1604,9 +1603,7 @@ addConn(RunService.RenderStepped:Connect(function()
     if not hrp then return end
 
     if not flyActive then
-        if hrp.Anchored then
-            hrp.Anchored = false
-        end
+        if hrp.Anchored then hrp.Anchored = false end
         return
     end
 
@@ -1655,16 +1652,45 @@ addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end))
 
--- NOCLIP
-addConn(RunService.Stepped:Connect(function()
-    if not noclipActive then return end
+-- ============================
+-- NOCLIP (arreglado)
+-- ============================
+
+-- Función para aplicar noclip a TODO el personaje
+local function aplicarNoclip()
+    local personaje = LocalPlayer.Character
+    if not personaje then return end
+    for _, parte in ipairs(personaje:GetDescendants()) do
+        if parte:IsA("BasePart") and parte.CanCollide then
+            parte.CanCollide = false
+        end
+    end
+end
+
+-- Función para quitar noclip de TODO el personaje
+local function quitarNoclip()
     local personaje = LocalPlayer.Character
     if not personaje then return end
     for _, parte in ipairs(personaje:GetDescendants()) do
         if parte:IsA("BasePart") then
-            parte.CanCollide = false
+            parte.CanCollide = true
         end
     end
+end
+
+-- Bucle: solo aplica noclip si noclipActive es true
+addConn(RunService.Stepped:Connect(function()
+    if noclipActive then
+        aplicarNoclip()
+    end
+end))
+
+-- Cuando el personaje respawnea, quitamos el noclip
+addConn(LocalPlayer.CharacterAdded:Connect(function()
+    -- Forzamos que al respawnear el noclip esté OFF
+    noclipActive = false
+    task.wait(0.5)
+    quitarNoclip()
 end))
 
 -- Tecla Noclip (toggle)
@@ -1676,15 +1702,9 @@ addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
     if nombre == noclipKey and noclipEnabled then
         noclipActive = not noclipActive
+        -- Si lo desactivamos, restauramos colisión inmediatamente
         if not noclipActive then
-            local personaje = LocalPlayer.Character
-            if personaje then
-                for _, parte in ipairs(personaje:GetDescendants()) do
-                    if parte:IsA("BasePart") then
-                        parte.CanCollide = true
-                    end
-                end
-            end
+            quitarNoclip()
         end
     end
 end))
@@ -1716,6 +1736,7 @@ addCleanup(function()
         AutoWindow._fovCircle.Visible = false
     end
 
+    -- Restaurar el personaje
     if LocalPlayer.Character then
         local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if hrp then hrp.Anchored = false end
