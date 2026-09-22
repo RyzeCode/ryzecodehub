@@ -15,8 +15,11 @@ local LocalPlayer = Players.LocalPlayer
 -- ============================
 -- LISTA MANUAL DE ALIADOS (TEAM CHECK)
 -- ============================
+-- Escribe aquí los nombres EXACTOS de tus compañeros de equipo.
+-- Ejemplo: aliados["RyzeCode"] = true
 local aliados = {
     -- ["NombreDeTuAmigo1"] = true,
+    -- ["NombreDeTuAmigo2"] = true,
 }
 
 -- ============================
@@ -49,6 +52,7 @@ local Colors = {
     HealthYellow = Color3.fromRGB(255, 200, 60),
     HealthRed    = Color3.fromRGB(220, 60, 60),
     HealthBg     = Color3.fromRGB(40, 40, 45),
+    Wallhack     = Color3.fromRGB(30, 144, 255),
 }
 
 -- ============================
@@ -810,7 +814,6 @@ local MiscTab = AutoWindow:CreateTab("MISC")
 
 local addCleanup = AutoWindow._addCleanup
 
--- Estado
 local aimbotEnabled = false
 local fovValue = 70
 local aimDistance = 600
@@ -830,56 +833,45 @@ local showHealthEnabled = false
 local teamCheckEnabled = false
 local skeletons = {}
 local healthBars = {}
+local wallhackAdornments = {}
 
 local instantReloadEnabled = false
 
--- FLY
 local flyEnabled = false
 local flyActive = false
 local flySpeed = 50
 local flyKey = "E"
 
--- NOCLIP
 local noclipEnabled = false
 local noclipActive = false
 local noclipKey = "V"
 
 -- ============================
--- AIM: CONTROLES
+-- AIM
 -- ============================
 AimTab:CreateToggle({
     Name = "Aimbot",
     CurrentValue = false,
     Order = 1,
-    Callback = function(valor)
-        aimbotEnabled = valor
-    end
+    Callback = function(valor) aimbotEnabled = valor end
 })
 
 AimTab:CreateKeybind({
     Name = "TOGGLE AIM",
     DefaultKey = "F",
     Order = 2,
-    Callback = function(nombre, input)
-        toggleKey = nombre
-    end
+    Callback = function(nombre, input) toggleKey = nombre end
 })
 
 AimTab:CreateSlider({
     Name = "SMOOTH",
-    Min = 0,
-    Max = 100,
-    CurrentValue = 50,
-    Order = 3,
-    Callback = function(valor)
-        smoothValue = valor
-    end
+    Min = 0, Max = 100, CurrentValue = 50, Order = 3,
+    Callback = function(valor) smoothValue = valor end
 })
 
 AimTab:CreateToggle({
     Name = "Show FOV",
-    CurrentValue = false,
-    Order = 4,
+    CurrentValue = false, Order = 4,
     Callback = function(valor)
         if AutoWindow._fovCircle then
             AutoWindow._fovCircle.Visible = valor
@@ -889,10 +881,7 @@ AimTab:CreateToggle({
 
 AimTab:CreateSlider({
     Name = "FOV",
-    Min = 1,
-    Max = 120,
-    CurrentValue = 70,
-    Order = 5,
+    Min = 1, Max = 120, CurrentValue = 70, Order = 5,
     Callback = function(valor)
         fovValue = valor
         if AutoWindow._actualizarFovCircle then
@@ -903,20 +892,14 @@ AimTab:CreateSlider({
 
 AimTab:CreateToggle({
     Name = "WALL CHECK",
-    CurrentValue = false,
-    Order = 6,
-    Callback = function(valor)
-        wallCheck = valor
-    end
+    CurrentValue = false, Order = 6,
+    Callback = function(valor) wallCheck = valor end
 })
 
 AimTab:CreateToggle({
     Name = "TARGET DEAD",
-    CurrentValue = false,
-    Order = 7,
-    Callback = function(valor)
-        targetDead = valor
-    end
+    CurrentValue = false, Order = 7,
+    Callback = function(valor) targetDead = valor end
 })
 
 AimTab:CreateDropdown({
@@ -924,39 +907,30 @@ AimTab:CreateDropdown({
     Options = { "HEAD", "BODY" },
     CurrentOption = "HEAD",
     Order = 8,
-    Callback = function(opt)
-        boneAim = opt
-    end
+    Callback = function(opt) boneAim = opt end
 })
 
 -- ============================
--- RAGE: CONTROLES
+-- RAGE
 -- ============================
 RageTab:CreateToggle({
     Name = "SILENT AIM",
-    CurrentValue = false,
-    Order = 1,
-    Callback = function(valor)
-        silentAimEnabled = valor
-    end
+    CurrentValue = false, Order = 1,
+    Callback = function(valor) silentAimEnabled = valor end
 })
 
 RageTab:CreateToggle({
     Name = "MAGIC BULLET",
-    CurrentValue = false,
-    Order = 2,
-    Callback = function(valor)
-        magicBulletEnabled = valor
-    end
+    CurrentValue = false, Order = 2,
+    Callback = function(valor) magicBulletEnabled = valor end
 })
 
 -- ============================
--- ESP: CONTROLES
+-- ESP
 -- ============================
 EspTab:CreateToggle({
     Name = "Wallhack",
-    CurrentValue = false,
-    Order = 1,
+    CurrentValue = false, Order = 1,
     Callback = function(valor)
         wallhackEnabled = valor
         if not valor then
@@ -964,15 +938,18 @@ EspTab:CreateToggle({
                 if hijo.Name:sub(1, 10) == "WallhackHL" then
                     hijo:Destroy()
                 end
+                if hijo.Name:sub(1, 10) == "WallhackBX" then
+                    hijo:Destroy()
+                end
             end
+            wallhackAdornments = {}
         end
     end
 })
 
 EspTab:CreateToggle({
     Name = "Skeleton",
-    CurrentValue = false,
-    Order = 2,
+    CurrentValue = false, Order = 2,
     Callback = function(valor)
         skeletonEnabled = valor
         if not valor then
@@ -988,8 +965,7 @@ EspTab:CreateToggle({
 
 EspTab:CreateToggle({
     Name = "Show Health",
-    CurrentValue = false,
-    Order = 3,
+    CurrentValue = false, Order = 3,
     Callback = function(valor)
         showHealthEnabled = valor
         if not valor then
@@ -1005,12 +981,11 @@ EspTab:CreateToggle({
 
 EspTab:CreateToggle({
     Name = "Team Check",
-    CurrentValue = false,
-    Order = 4,
+    CurrentValue = false, Order = 4,
     Callback = function(valor)
         teamCheckEnabled = valor
         for _, hijo in ipairs(espFrame:GetChildren()) do
-            if hijo.Name:sub(1, 10) == "WallhackHL" then
+            if hijo.Name:sub(1, 10) == "WallhackHL" or hijo.Name:sub(1, 10) == "WallhackBX" then
                 hijo:Destroy()
             elseif hijo.Name:sub(1, 9) == "Skeleton_" then
                 hijo:Destroy()
@@ -1020,25 +995,22 @@ EspTab:CreateToggle({
         end
         skeletons = {}
         healthBars = {}
+        wallhackAdornments = {}
     end
 })
 
 -- ============================
--- MISC: CONTROLES
+-- MISC
 -- ============================
 MiscTab:CreateToggle({
     Name = "INSTANT RELOAD",
-    CurrentValue = false,
-    Order = 1,
-    Callback = function(valor)
-        instantReloadEnabled = valor
-    end
+    CurrentValue = false, Order = 1,
+    Callback = function(valor) instantReloadEnabled = valor end
 })
 
 MiscTab:CreateToggle({
     Name = "Fly",
-    CurrentValue = false,
-    Order = 2,
+    CurrentValue = false, Order = 2,
     Callback = function(valor)
         flyEnabled = valor
         if not valor then
@@ -1053,33 +1025,23 @@ MiscTab:CreateToggle({
 
 MiscTab:CreateKeybind({
     Name = "Fly Key",
-    DefaultKey = "E",
-    Order = 3,
-    Callback = function(nombre, input)
-        flyKey = nombre
-    end
+    DefaultKey = "E", Order = 3,
+    Callback = function(nombre, input) flyKey = nombre end
 })
 
 MiscTab:CreateSlider({
     Name = "Fly Speed",
-    Min = 1,
-    Max = 100,
-    CurrentValue = 50,
-    Order = 4,
-    Callback = function(valor)
-        flySpeed = valor
-    end
+    Min = 1, Max = 100, CurrentValue = 50, Order = 4,
+    Callback = function(valor) flySpeed = valor end
 })
 
 MiscTab:CreateToggle({
     Name = "Noclip",
-    CurrentValue = false,
-    Order = 5,
+    CurrentValue = false, Order = 5,
     Callback = function(valor)
         noclipEnabled = valor
         if not valor then
             noclipActive = false
-            -- Restauramos la colisión
             if LocalPlayer.Character then
                 for _, parte in ipairs(LocalPlayer.Character:GetDescendants()) do
                     if parte:IsA("BasePart") then
@@ -1093,41 +1055,26 @@ MiscTab:CreateToggle({
 
 MiscTab:CreateKeybind({
     Name = "Noclip Key",
-    DefaultKey = "V",
-    Order = 6,
-    Callback = function(nombre, input)
-        noclipKey = nombre
-    end
+    DefaultKey = "V", Order = 6,
+    Callback = function(nombre, input) noclipKey = nombre end
 })
 
 -- ============================
--- FUNCIONES DE LÓGICA
+-- LÓGICA
 -- ============================
 local function estaMuerto(personaje)
     if not personaje then return true end
     if not personaje.Parent then return true end
-
     local humanoide = personaje:FindFirstChildOfClass("Humanoid")
     if not humanoide then return true end
-
     if humanoide.Health <= 0 then return true end
-
     local estado = humanoide:GetState()
-    if estado == Enum.HumanoidStateType.Dead then return true end
-    if estado == Enum.HumanoidStateType.None then return true end
-
-    local flagDead = personaje:FindFirstChild("Dead") or personaje:FindFirstChild("IsDead")
-    if flagDead and flagDead:IsA("BoolValue") and flagDead.Value then
-        return true
-    end
-
+    if estado == Enum.HumanoidStateType.Dead or estado == Enum.HumanoidStateType.None then return true end
     return false
 end
 
 local function esDelMismoEquipo(jugador)
-    if aliados[jugador.Name] then
-        return true
-    end
+    if aliados[jugador.Name] then return true end
     if LocalPlayer.Team and jugador.Team then
         if jugador.Team == LocalPlayer.Team then
             return true
@@ -1150,56 +1097,32 @@ local function hayParedEntre(desde, hasta, ignorarPersonaje)
     local rayParams = RaycastParams.new()
     rayParams.FilterType = Enum.RaycastFilterType.Exclude
     rayParams.IgnoreWater = true
-
     local filtros = {}
-    if LocalPlayer.Character then
-        table.insert(filtros, LocalPlayer.Character)
-    end
-    if ignorarPersonaje then
-        table.insert(filtros, ignorarPersonaje)
-    end
+    if LocalPlayer.Character then table.insert(filtros, LocalPlayer.Character) end
+    if ignorarPersonaje then table.insert(filtros, ignorarPersonaje) end
     rayParams.FilterDescendantsInstances = filtros
-
     local direccion = hasta - desde
     local resultado = workspace:Raycast(desde, direccion, rayParams)
-
     if not resultado then return false end
-
     local golpeado = resultado.Instance
-
-    if ignorarPersonaje and golpeado:IsDescendantOf(ignorarPersonaje) then
-        return false
-    end
-
-    if LocalPlayer.Character and golpeado:IsDescendantOf(LocalPlayer.Character) then
-        return false
-    end
-
+    if ignorarPersonaje and golpeado:IsDescendantOf(ignorarPersonaje) then return false end
+    if LocalPlayer.Character and golpeado:IsDescendantOf(LocalPlayer.Character) then return false end
     return true
 end
 
 local function obtenerJugadorCercano(forzarCabeza, ignorarParedes)
     local cam = workspace.CurrentCamera
     if not cam then return nil end
-
     local centroPantalla = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
     local radioFov = fovValue * 6 / 2
-
     local mejorObjetivo = nil
     local mejorDistancia = math.huge
-
     for _, jugador in ipairs(Players:GetPlayers()) do
         if jugador ~= LocalPlayer then
             local personaje = jugador.Character
             if personaje and personaje.Parent then
-                if estaMuerto(personaje) and not targetDead then
-                    continue
-                end
-
-                if teamCheckEnabled and esDelMismoEquipo(jugador) then
-                    continue
-                end
-
+                if estaMuerto(personaje) and not targetDead then continue end
+                if teamCheckEnabled and esDelMismoEquipo(jugador) then continue end
                 local puntoObjetivo = obtenerPuntoObjetivo(personaje, forzarCabeza)
                 if puntoObjetivo then
                     if wallCheck and not ignorarParedes then
@@ -1207,10 +1130,8 @@ local function obtenerJugadorCercano(forzarCabeza, ignorarParedes)
                             continue
                         end
                     end
-
                     local distanciaStuds = (puntoObjetivo.Position - cam.CFrame.Position).Magnitude
                     local distanciaMetros = distanciaStuds * 0.28
-
                     if distanciaMetros <= aimDistance then
                         local screenPoint, onScreen = cam:WorldToViewportPoint(puntoObjetivo.Position)
                         if onScreen then
@@ -1225,15 +1146,10 @@ local function obtenerJugadorCercano(forzarCabeza, ignorarParedes)
             end
         end
     end
-
     return mejorObjetivo
 end
 
--- ============================
--- CONEXIONES
--- ============================
 local conexiones = {}
-
 local function addConn(conn)
     table.insert(conexiones, conn)
     return conn
@@ -1242,15 +1158,12 @@ end
 -- Aimbot
 addConn(RunService.RenderStepped:Connect(function()
     if not aimbotEnabled or not aimActive then return end
-
     local cam = workspace.CurrentCamera
     if not cam then return end
-
     local objetivo = obtenerJugadorCercano(false, magicBulletEnabled)
     if objetivo then
         local factor = 1 - (smoothValue / 100)
         factor = math.clamp(factor, 0.03, 1)
-
         local targetCFrame = CFrame.new(cam.CFrame.Position, objetivo.Position)
         cam.CFrame = cam.CFrame:Lerp(targetCFrame, factor)
     end
@@ -1258,17 +1171,13 @@ end))
 
 addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     local nombre = keyName(input.UserInputType)
-    if input.UserInputType == Enum.UserInputType.Keyboard then
-        nombre = input.KeyCode.Name
-    end
+    if input.UserInputType == Enum.UserInputType.Keyboard then nombre = input.KeyCode.Name end
     if nombre == toggleKey then aimActive = true end
 end))
 
 addConn(UserInputService.InputEnded:Connect(function(input)
     local nombre = keyName(input.UserInputType)
-    if input.UserInputType == Enum.UserInputType.Keyboard then
-        nombre = input.KeyCode.Name
-    end
+    if input.UserInputType == Enum.UserInputType.Keyboard then nombre = input.KeyCode.Name end
     if nombre == toggleKey then aimActive = false end
 end))
 
@@ -1276,17 +1185,13 @@ end))
 addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not silentAimEnabled then return end
     if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-
     local cam = workspace.CurrentCamera
     if not cam then return end
-
     local objetivo = obtenerJugadorCercano(true, magicBulletEnabled)
     if not objetivo then return end
-
     local cframeOriginal = cam.CFrame
     local cframeObjetivo = CFrame.new(cam.CFrame.Position, objetivo.Position)
     cam.CFrame = cframeObjetivo
-
     RunService.RenderStepped:Wait()
     cam.CFrame = cframeOriginal
 end))
@@ -1295,17 +1200,13 @@ end))
 addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not magicBulletEnabled then return end
     if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-
     local cam = workspace.CurrentCamera
     if not cam then return end
-
     local objetivo = obtenerJugadorCercano(true, true)
     if not objetivo then return end
-
     local cframeOriginal = cam.CFrame
     local cframeObjetivo = CFrame.new(cam.CFrame.Position, objetivo.Position)
     cam.CFrame = cframeObjetivo
-
     RunService.RenderStepped:Wait()
     RunService.RenderStepped:Wait()
     cam.CFrame = cframeOriginal
@@ -1313,25 +1214,28 @@ end))
 
 -- ESP
 addConn(RunService.RenderStepped:Connect(function()
-    -- WALLHACK
+    -- WALLHACK (Highlight + BoxHandleAdornment)
     if wallhackEnabled then
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
                 if teamCheckEnabled and esDelMismoEquipo(jugador) then
                     local hlViejo = espFrame:FindFirstChild("WallhackHL_" .. jugador.Name)
                     if hlViejo then hlViejo:Destroy() end
+                    local bxViejo = espFolder2 and espFolder2:FindFirstChild("WallhackBX_" .. jugador.Name)
+                    if bxViejo then bxViejo:Destroy() end
                     continue
                 end
 
                 local personaje = jugador.Character
+
+                -- Highlight
                 local hlNombre = "WallhackHL_" .. jugador.Name
                 local hlExistente = espFrame:FindFirstChild(hlNombre)
-
                 if not hlExistente then
                     local hl = Instance.new("Highlight")
                     hl.Name = hlNombre
                     hl.Adornee = personaje
-                    hl.FillColor = Color3.fromRGB(30, 144, 255)
+                    hl.FillColor = Colors.Wallhack
                     hl.FillTransparency = 0.5
                     hl.OutlineColor = Color3.fromRGB(255, 255, 255)
                     hl.OutlineTransparency = 0
@@ -1340,6 +1244,29 @@ addConn(RunService.RenderStepped:Connect(function()
                 else
                     if hlExistente.Adornee ~= personaje then
                         hlExistente.Adornee = personaje
+                    end
+                end
+
+                -- BoxHandleAdornment (más fiable)
+                local bxNombre = "WallhackBX_" .. jugador.Name
+                local bxExistente = espFrame:FindFirstChild(bxNombre)
+                if not bxExistente then
+                    local hrp = personaje:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        local box = Instance.new("BoxHandleAdornment")
+                        box.Name = bxNombre
+                        box.Adornee = hrp
+                        box.Size = Vector3.new(3, 5, 2)
+                        box.Color3 = Colors.Wallhack
+                        box.Transparency = 0.3
+                        box.AlwaysOnTop = true
+                        box.ZIndex = 10
+                        box.Parent = espFrame
+                    end
+                else
+                    local hrp = personaje:FindFirstChild("HumanoidRootPart")
+                    if hrp and bxExistente.Adornee ~= hrp then
+                        bxExistente.Adornee = hrp
                     end
                 end
             end
@@ -1369,15 +1296,12 @@ addConn(RunService.RenderStepped:Connect(function()
                     skeletons[jugador.Character] = nil
                     continue
                 end
-
                 local personaje = jugador.Character
                 local nombre = "Skeleton_" .. personaje.Name
-
                 if not espFrame:FindFirstChild(nombre) then
                     local carpeta = Instance.new("Folder")
                     carpeta.Name = nombre
                     carpeta.Parent = espFrame
-
                     local lineas = {}
                     for i = 1, 15 do
                         local linea = Instance.new("Frame")
@@ -1392,7 +1316,6 @@ addConn(RunService.RenderStepped:Connect(function()
                     end
                     skeletons[personaje] = lineas
                 end
-
                 local lineas = skeletons[personaje]
                 if lineas then
                     for i, con in ipairs(conexionesHuesos) do
@@ -1435,7 +1358,6 @@ addConn(RunService.RenderStepped:Connect(function()
     if showHealthEnabled then
         local cam = workspace.CurrentCamera
         if not cam then return end
-
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
                 if teamCheckEnabled and esDelMismoEquipo(jugador) then
@@ -1444,17 +1366,14 @@ addConn(RunService.RenderStepped:Connect(function()
                     healthBars[jugador] = nil
                     continue
                 end
-
                 local personaje = jugador.Character
                 local humanoide = personaje:FindFirstChildOfClass("Humanoid")
                 local hrp = personaje:FindFirstChild("HumanoidRootPart")
                     or personaje:FindFirstChild("UpperTorso")
                     or personaje:FindFirstChild("Torso")
-
                 if humanoide and hrp then
                     local nombreBarra = "HealthBar_" .. jugador.Name
                     local contenedor = healthBars[jugador]
-
                     if not contenedor then
                         contenedor = Instance.new("Frame")
                         contenedor.Name = nombreBarra
@@ -1482,7 +1401,6 @@ addConn(RunService.RenderStepped:Connect(function()
                         fondo.BorderSizePixel = 0
                         fondo.ZIndex = 3
                         fondo.Parent = contenedor
-
                         local fondoCorner = Instance.new("UICorner")
                         fondoCorner.CornerRadius = UDim.new(1, 0)
                         fondoCorner.Parent = fondo
@@ -1495,7 +1413,6 @@ addConn(RunService.RenderStepped:Connect(function()
                         relleno.BorderSizePixel = 0
                         relleno.ZIndex = 4
                         relleno.Parent = fondo
-
                         local rellenoCorner = Instance.new("UICorner")
                         rellenoCorner.CornerRadius = UDim.new(1, 0)
                         rellenoCorner.Parent = relleno
@@ -1504,36 +1421,27 @@ addConn(RunService.RenderStepped:Connect(function()
                     local cabeza = personaje:FindFirstChild("Head") or hrp
                     local posCabeza, enCabeza = cam:WorldToViewportPoint(cabeza.Position)
                     local posPies, enPies = cam:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
-
                     if enCabeza and posCabeza.Z > 0 and enPies and posPies.Z > 0 then
                         contenedor.Visible = true
-
                         local alturaPersonaje = math.abs(posPies.Y - posCabeza.Y)
                         alturaPersonaje = math.clamp(alturaPersonaje, 20, 300)
-
                         local alturaBarra = alturaPersonaje * 0.7
                         local anchoBarra = math.clamp(alturaPersonaje * 0.06, 3, 8)
                         local tamanoTexto = math.clamp(alturaPersonaje * 0.2, 8, 16)
-
                         contenedor.Size = UDim2.new(0, anchoBarra, 0, alturaBarra)
                         contenedor.Position = UDim2.new(0, posCabeza.X + anchoBarra + 14, 0, posCabeza.Y)
-
                         local texto = contenedor:FindFirstChild("Porcentaje")
                         if texto then
                             texto.Size = UDim2.new(0, 40, 0, tamanoTexto)
                             texto.TextSize = tamanoTexto
                             texto.Position = UDim2.new(0, -20 + anchoBarra / 2, 0, -tamanoTexto - 3)
                         end
-
                         local fondo = contenedor:FindFirstChild("Fondo")
                         local relleno = fondo and fondo:FindFirstChild("Relleno")
-
                         if fondo and relleno then
                             fondo.Size = UDim2.new(1, 0, 1, 0)
-
                             local vida = math.clamp(humanoide.Health / humanoide.MaxHealth, 0, 1)
                             relleno.Size = UDim2.new(1, 0, vida, 0)
-
                             if vida > 0.6 then
                                 relleno.BackgroundColor3 = Colors.HealthGreen
                             elseif vida > 0.3 then
@@ -1541,7 +1449,6 @@ addConn(RunService.RenderStepped:Connect(function()
                             else
                                 relleno.BackgroundColor3 = Colors.HealthRed
                             end
-
                             if texto then
                                 texto.Text = tostring(math.floor(vida * 100)) .. "%"
                             end
@@ -1558,10 +1465,8 @@ end))
 -- INSTANT RELOAD
 addConn(RunService.RenderStepped:Connect(function()
     if not instantReloadEnabled then return end
-
     local personaje = LocalPlayer.Character
     if not personaje then return end
-
     for _, hijo in ipairs(personaje:GetChildren()) do
         if hijo:IsA("Tool") then
             for _, valor in ipairs(hijo:GetDescendants()) do
@@ -1577,7 +1482,6 @@ addConn(RunService.RenderStepped:Connect(function()
                     end
                 end
             end
-
             local animator = personaje:FindFirstChildOfClass("Animator")
                 or (personaje:FindFirstChild("Humanoid") and personaje.Humanoid:FindFirstChildOfClass("Animator"))
             if animator then
@@ -1592,71 +1496,42 @@ addConn(RunService.RenderStepped:Connect(function()
     end
 end))
 
--- FLY (toggle)
+-- FLY
 addConn(RunService.RenderStepped:Connect(function()
     if not flyEnabled then return end
-
     local personaje = LocalPlayer.Character
     if not personaje then return end
-
     local hrp = personaje:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-
     if not flyActive then
         if hrp.Anchored then hrp.Anchored = false end
         return
     end
-
     hrp.Anchored = true
-
     local cam = workspace.CurrentCamera
     if not cam then return end
-
     local direccion = Vector3.new(0, 0, 0)
     local velocidad = flySpeed / 10
-
-    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-        direccion = direccion + cam.CFrame.LookVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-        direccion = direccion - cam.CFrame.LookVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-        direccion = direccion - cam.CFrame.RightVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-        direccion = direccion + cam.CFrame.RightVector
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-        direccion = direccion + Vector3.new(0, 1, 0)
-    end
-    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-        direccion = direccion - Vector3.new(0, 1, 0)
-    end
-
+    if UserInputService:IsKeyDown(Enum.KeyCode.W) then direccion = direccion + cam.CFrame.LookVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.S) then direccion = direccion - cam.CFrame.LookVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.A) then direccion = direccion - cam.CFrame.RightVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.D) then direccion = direccion + cam.CFrame.RightVector end
+    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then direccion = direccion + Vector3.new(0, 1, 0) end
+    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then direccion = direccion - Vector3.new(0, 1, 0) end
     if direccion.Magnitude > 0 then
         direccion = direccion.Unit * velocidad
         hrp.CFrame = hrp.CFrame + direccion
     end
 end))
 
--- Tecla Fly (toggle)
 addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     local nombre = keyName(input.UserInputType)
-    if input.UserInputType == Enum.UserInputType.Keyboard then
-        nombre = input.KeyCode.Name
-    end
-    if nombre == flyKey and flyEnabled then
-        flyActive = not flyActive
-    end
+    if input.UserInputType == Enum.UserInputType.Keyboard then nombre = input.KeyCode.Name end
+    if nombre == flyKey and flyEnabled then flyActive = not flyActive end
 end))
 
--- ============================
--- NOCLIP (arreglado)
--- ============================
-
--- Función para aplicar noclip a TODO el personaje
+-- NOCLIP
 local function aplicarNoclip()
     local personaje = LocalPlayer.Character
     if not personaje then return end
@@ -1667,7 +1542,6 @@ local function aplicarNoclip()
     end
 end
 
--- Función para quitar noclip de TODO el personaje
 local function quitarNoclip()
     local personaje = LocalPlayer.Character
     if not personaje then return end
@@ -1678,31 +1552,24 @@ local function quitarNoclip()
     end
 end
 
--- Bucle: solo aplica noclip si noclipActive es true
 addConn(RunService.Stepped:Connect(function()
     if noclipActive then
         aplicarNoclip()
     end
 end))
 
--- Cuando el personaje respawnea, quitamos el noclip
 addConn(LocalPlayer.CharacterAdded:Connect(function()
-    -- Forzamos que al respawnear el noclip esté OFF
     noclipActive = false
     task.wait(0.5)
     quitarNoclip()
 end))
 
--- Tecla Noclip (toggle)
 addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     local nombre = keyName(input.UserInputType)
-    if input.UserInputType == Enum.UserInputType.Keyboard then
-        nombre = input.KeyCode.Name
-    end
+    if input.UserInputType == Enum.UserInputType.Keyboard then nombre = input.KeyCode.Name end
     if nombre == noclipKey and noclipEnabled then
         noclipActive = not noclipActive
-        -- Si lo desactivamos, restauramos colisión inmediatamente
         if not noclipActive then
             quitarNoclip()
         end
@@ -1712,6 +1579,8 @@ end))
 addConn(Players.PlayerRemoving:Connect(function(jugador)
     local hl = espFrame:FindFirstChild("WallhackHL_" .. jugador.Name)
     if hl then hl:Destroy() end
+    local bx = espFrame:FindFirstChild("WallhackBX_" .. jugador.Name)
+    if bx then bx:Destroy() end
     local sk = espFrame:FindFirstChild("Skeleton_" .. jugador.Name)
     if sk then sk:Destroy() end
     local hb = espFrame:FindFirstChild("HealthBar_" .. jugador.Name)
@@ -1720,23 +1589,19 @@ addConn(Players.PlayerRemoving:Connect(function(jugador)
 end))
 
 -- ============================
--- LIMPIEZA AL CERRAR
+-- LIMPIEZA
 -- ============================
 addCleanup(function()
     for _, conn in ipairs(conexiones) do
         pcall(function() conn:Disconnect() end)
     end
     conexiones = {}
-
     for _, hijo in ipairs(espFrame:GetChildren()) do
         pcall(function() hijo:Destroy() end)
     end
-
     if AutoWindow._fovCircle then
         AutoWindow._fovCircle.Visible = false
     end
-
-    -- Restaurar el personaje
     if LocalPlayer.Character then
         local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if hrp then hrp.Anchored = false end
@@ -1746,7 +1611,6 @@ addCleanup(function()
             end
         end
     end
-
     aimbotEnabled = false
     silentAimEnabled = false
     magicBulletEnabled = false
@@ -1762,7 +1626,6 @@ addCleanup(function()
     aimActive = false
     skeletons = {}
     healthBars = {}
-
     print("[Ryze.xyz] Todo desactivado correctamente ✅")
 end)
 
