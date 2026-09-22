@@ -602,7 +602,7 @@ function RyzeCodeHub:CreateWindow(config)
             return container
         end
 
-        -- KEYBIND
+        -- KEYBIND (corregido para aceptar clic derecho)
         function Tab:CreateKeybind(keybindConfig)
             keybindConfig = keybindConfig or {}
             local keybindName = keybindConfig.Name or "Keybind"
@@ -627,17 +627,26 @@ function RyzeCodeHub:CreateWindow(config)
             btnCorner.Parent = button
 
             local esperando = false
+            local tiempoActivacion = 0
 
             button.MouseButton1Click:Connect(function()
                 if not esperando then
                     esperando = true
+                    tiempoActivacion = tick()
                     button.Text = keybindName .. ": ..."
                 end
             end)
 
             UserInputService.InputBegan:Connect(function(input, gameProcessed)
-                if gameProcessed then return end
                 if not esperando then return end
+                -- Esperar 0.2 segundos antes de capturar para no capturar el clic del propio botón
+                if tick() - tiempoActivacion < 0.2 then return end
+
+                -- Ignoramos solo el movimiento del ratón y la rueda
+                if input.UserInputType == Enum.UserInputType.MouseMovement
+                or input.UserInputType == Enum.UserInputType.MouseWheel then
+                    return
+                end
 
                 esperando = false
 
@@ -692,14 +701,12 @@ end
 local AutoWindow = RyzeCodeHub:CreateWindow({ Name = "Ryze.xyz" })
 local AutoTab = AutoWindow:CreateTab("AIM")
 
--- Estado compartido
 local aimbotEnabled = false
 local fovValue = 70
 local aimDistance = 600
 local toggleKey = "F"
 local aimActive = false
 
--- Toggle principal
 AutoTab:CreateToggle({
     Name = "Aimbot",
     CurrentValue = false,
@@ -709,7 +716,6 @@ AutoTab:CreateToggle({
     end
 })
 
--- Slider FOV
 AutoTab:CreateSlider({
     Name = "FOV",
     Min = 1,
@@ -723,7 +729,6 @@ AutoTab:CreateSlider({
     end
 })
 
--- Toggle Show FOV
 AutoTab:CreateToggle({
     Name = "Show FOV",
     CurrentValue = false,
@@ -734,7 +739,6 @@ AutoTab:CreateToggle({
     end
 })
 
--- Dropdown AIM DISTANCE
 AutoTab:CreateDropdown({
     Name = "AIM DISTANCE",
     Options = { "200M", "600M", "1000M" },
@@ -751,7 +755,6 @@ AutoTab:CreateDropdown({
     end
 })
 
--- Keybind TOGGLE AIM
 AutoTab:CreateKeybind({
     Name = "TOGGLE AIM",
     DefaultKey = "F",
@@ -808,7 +811,6 @@ local function apuntarAlJugador(hrp)
     cam.CFrame = CFrame.new(cam.CFrame.Position, hrp.Position)
 end
 
--- Bucle del aimbot (solo apunta mientras la tecla está pulsada)
 RunService.RenderStepped:Connect(function()
     if not aimbotEnabled or not aimActive then return end
     local objetivo = obtenerJugadorCercano()
@@ -817,10 +819,8 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Detectar la tecla/clic configurada para mantener el aim
+-- Detectar la tecla configurada para activar el aim mientras se mantiene pulsada
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-
     local nombre = keyName(input.UserInputType)
     if input.UserInputType == Enum.UserInputType.Keyboard then
         nombre = input.KeyCode.Name
