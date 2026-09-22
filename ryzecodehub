@@ -1,32 +1,33 @@
--- RyzeCodeHub.lua
+-- Ryze.xyz
 -- Librería de UI personal
 -- Autor: Ryze
 
 local RyzeCodeHub = {}
 
 RyzeCodeHub.Version = "1.0.0"
-RyzeCodeHub.Name = "RyzeCodeHub"
+RyzeCodeHub.Name = "Ryze.xyz"
 
 -- ============================
--- COLORES (BARRA AZUL OSCURO + RESTO GRIS OSCURO)
+-- COLORES
 -- ============================
 local Colors = {
-    Background   = Color3.fromRGB(35, 35, 40),
-    TitleBar     = Color3.fromRGB(20, 60, 120),
-    TabList      = Color3.fromRGB(28, 28, 32),
-    TabActive    = Color3.fromRGB(55, 55, 65),
-    TabInactive  = Color3.fromRGB(28, 28, 32),
-    Content      = Color3.fromRGB(35, 35, 40),
-    Button       = Color3.fromRGB(50, 50, 60),
-    ButtonHover  = Color3.fromRGB(70, 70, 85),
-    TextDark     = Color3.fromRGB(230, 230, 240),
-    TextLight    = Color3.fromRGB(255, 255, 255),
+    Background   = Color3.fromRGB(35, 35, 40),     -- fondo general
+    TitleBar     = Color3.fromRGB(20, 60, 120),    -- barra de título (azul oscuro)
+    TabList      = Color3.fromRGB(35, 35, 40),     -- lista de pestañas (igual que el fondo)
+    TabActive    = Color3.fromRGB(55, 55, 65),     -- pestaña activa
+    TabInactive  = Color3.fromRGB(35, 35, 40),     -- pestaña inactiva (igual que el fondo)
+    Content      = Color3.fromRGB(35, 35, 40),     -- contenido (igual que el fondo)
+    Button       = Color3.fromRGB(50, 50, 60),     -- botones
+    ButtonHover  = Color3.fromRGB(70, 70, 85),     -- botones al pasar el ratón
+    TextDark     = Color3.fromRGB(230, 230, 240),  -- texto
+    TextLight    = Color3.fromRGB(255, 255, 255),  -- texto claro
     Minimize     = Color3.fromRGB(50, 50, 60),
     MinimizeHover= Color3.fromRGB(70, 70, 85),
     Close        = Color3.fromRGB(50, 50, 60),
     CloseHover   = Color3.fromRGB(200, 60, 60),
     Bubble       = Color3.fromRGB(20, 60, 120),
     BubbleHover  = Color3.fromRGB(30, 90, 170),
+    Border       = Color3.fromRGB(0, 0, 0),        -- borde negro
 }
 
 -- ============================
@@ -34,10 +35,10 @@ local Colors = {
 -- ============================
 function RyzeCodeHub:CreateWindow(config)
     config = config or {}
-    local windowName = config.Name or "RyzeCodeHub"
+    local windowName = config.Name or "Ryze.xyz"
 
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "RyzeCodeHub_UI"
+    screenGui.Name = "Ryze_UI"
     screenGui.ResetOnSpawn = false
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.Parent = game.CoreGui
@@ -58,6 +59,12 @@ function RyzeCodeHub:CreateWindow(config)
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = mainFrame
+
+    -- Borde negro alrededor de la ventana
+    local border = Instance.new("UIStroke")
+    border.Color = Colors.Border
+    border.Thickness = 2
+    border.Parent = mainFrame
 
     -- Barra de título
     local titleBar = Instance.new("Frame")
@@ -81,7 +88,7 @@ function RyzeCodeHub:CreateWindow(config)
     title.Font = Enum.Font.GothamBold
     title.Parent = titleBar
 
-    -- Botón minimizar (gris, texto blanco)
+    -- Botón minimizar
     local minimizeBtn = Instance.new("TextButton")
     minimizeBtn.Name = "MinimizeBtn"
     minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
@@ -98,7 +105,7 @@ function RyzeCodeHub:CreateWindow(config)
     minCorner.CornerRadius = UDim.new(0, 6)
     minCorner.Parent = minimizeBtn
 
-    -- Botón cerrar (gris, texto blanco)
+    -- Botón cerrar
     local closeBtn = Instance.new("TextButton")
     closeBtn.Name = "CloseBtn"
     closeBtn.Size = UDim2.new(0, 30, 0, 30)
@@ -151,6 +158,11 @@ function RyzeCodeHub:CreateWindow(config)
     local bubbleCorner = Instance.new("UICorner")
     bubbleCorner.CornerRadius = UDim.new(1, 0)
     bubbleCorner.Parent = bubble
+
+    local bubbleBorder = Instance.new("UIStroke")
+    bubbleBorder.Color = Colors.Border
+    bubbleBorder.Thickness = 2
+    bubbleBorder.Parent = bubble
 
     bubble.MouseEnter:Connect(function()
         bubble.BackgroundColor3 = Colors.BubbleHover
@@ -355,13 +367,13 @@ end
 -- ============================
 -- AUTO-SETUP
 -- ============================
-local AutoWindow = RyzeCodeHub:CreateWindow({ Name = "RyzeCodeHub" })
+local AutoWindow = RyzeCodeHub:CreateWindow({ Name = "Ryze.xyz" })
 local AutoTab = AutoWindow:CreateTab("Troll Scripts")
 
 AutoTab:CreateButton({
     Name = "Ejemplo",
     Callback = function()
-        print("[RyzeCodeHub] Botón pulsado ✅")
+        print("[Ryze.xyz] Botón pulsado ✅")
     end
 })
 
@@ -369,7 +381,7 @@ AutoTab:CreateToggle({
     Name = "Ejemplo Toggle",
     CurrentValue = false,
     Callback = function(v)
-        print("[RyzeCodeHub] Toggle:", v)
+        print("[Ryze.xyz] Toggle:", v)
     end
 })
 
