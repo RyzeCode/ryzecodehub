@@ -22,69 +22,27 @@ local aliados = {
 -- ============================
 -- MAPA DE CARACTERES SIMILARES (CHAT BYPASS)
 -- ============================
--- Cada letra normal se reemplaza por varias opciones de caracteres Unicode
--- visualmente idénticos de otros alfabetos (cirílico, griego, etc.)
 local mapaChatBypass = {
-    a = {"а", "α", "ａ"},
-    b = {"Ь", "ъ", "ｂ"},
-    c = {"с", "ϲ", "ｃ"},
-    d = {"ԁ", "ⅾ", "ｄ"},
-    e = {"е", "е", "ｅ"},
-    f = {"ғ", "ｆ"},
-    g = {"ɡ", "ｇ"},
-    h = {"һ", "ｈ"},
-    i = {"і", "ı", "ｉ"},
-    j = {"ј", "ｊ"},
-    k = {"κ", "ｋ"},
-    l = {"ӏ", "ｌ"},
-    m = {"м", "ｍ"},
-    n = {"п", "ｎ"},
-    o = {"о", "ο", "ｏ"},
-    p = {"р", "ρ", "ｐ"},
-    q = {"ԛ", "ｑ"},
-    r = {"г", "ｒ"},
-    s = {"ѕ", "ｓ"},
-    t = {"т", "ｔ"},
-    u = {"ц", "υ", "ｕ"},
-    v = {"ν", "ｖ"},
-    w = {"ш", "ԝ", "ｗ"},
-    x = {"х", "ｘ"},
-    y = {"у", "γ", "ｙ"},
-    z = {"ᴢ", "ｚ"},
-    -- Vocales con acento (para más variaciones)
-    á = {"а́", "ά"},
-    é = {"е́"},
-    í = {"і́"},
-    ó = {"о́"},
-    ú = {"ц́"},
-    ñ = {"п̃"},
-    -- Números
-    ["0"] = {"О", "０"},
-    ["1"] = {"І", "１"},
-    ["2"] = {"２"},
-    ["3"] = {"З", "３"},
-    ["4"] = {"４"},
-    ["5"] = {"５"},
-    ["6"] = {"６"},
-    ["7"] = {"７"},
-    ["8"] = {"８"},
-    ["9"] = {"９"},
+    a = {"а", "α"}, b = {"Ь", "ъ"}, c = {"с", "ϲ"}, d = {"ԁ"},
+    e = {"е", "ｅ"}, f = {"ғ"}, g = {"ɡ"}, h = {"һ"},
+    i = {"і", "ı"}, j = {"ј"}, k = {"κ"}, l = {"ӏ"},
+    m = {"м"}, n = {"п"}, o = {"о", "ο"}, p = {"р", "ρ"},
+    q = {"ԛ"}, r = {"г"}, s = {"ѕ"}, t = {"т"},
+    u = {"ц", "υ"}, v = {"ν"}, w = {"ш", "ԝ"}, x = {"х"},
+    y = {"у", "γ"}, z = {"ᴢ"},
+    ["0"] = {"О"}, ["1"] = {"І"}, ["3"] = {"З"},
 }
 
--- Función que convierte un texto normal a texto bypass
 local function convertirChatBypass(texto)
     local resultado = ""
     for i = 1, #texto do
         local caracter = texto:sub(i, i)
         local caracterLower = string.lower(caracter)
-        
         if mapaChatBypass[caracterLower] then
             local opciones = mapaChatBypass[caracterLower]
-            -- Elegimos aleatoriamente una opción
             local randomIndex = math.random(1, #opciones)
             resultado = resultado .. opciones[randomIndex]
         else
-            -- Si no hay mapeo, dejamos el caracter original
             resultado = resultado .. caracter
         end
     end
@@ -307,6 +265,7 @@ function RyzeCodeHub:CreateWindow(config)
         and input.UserInputType ~= Enum.UserInputType.Touch then
             return
         end
+
         local delta = input.Position - bubbleStartMouse
         if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
             bubble.Position = UDim2.new(
@@ -321,7 +280,9 @@ function RyzeCodeHub:CreateWindow(config)
         or input.UserInputType == Enum.UserInputType.Touch then
             local delta = input.Position - bubbleStartMouse
             local seMovio = math.abs(delta.X) > 5 or math.abs(delta.Y) > 5
+
             bubbleDragging = false
+
             if not seMovio then
                 bubble.Visible = false
                 mainFrame.Visible = true
@@ -611,12 +572,15 @@ function RyzeCodeHub:CreateWindow(config)
                 local barAbsX = bar.AbsolutePosition.X
                 local barAbsWidth = bar.AbsoluteSize.X
                 if barAbsWidth <= 0 then return end
+
                 local relative = math.clamp((inputX - barAbsX) / barAbsWidth, 0, 1)
                 local newValue = math.floor(minValue + (maxValue - minValue) * relative + 0.5)
+
                 currentValue = newValue
                 fill.Size = UDim2.new(relative, 0, 1, 0)
                 knob.Position = UDim2.new(relative, -8, 0.5, -8)
                 valueLabel.Text = tostring(newValue)
+
                 pcall(callback, newValue)
             end
 
@@ -746,16 +710,20 @@ function RyzeCodeHub:CreateWindow(config)
                     optionList.Visible = false
                     return
                 end
+
                 local absPos = container.AbsolutePosition
                 local absSize = container.AbsoluteSize
                 local listHeight = #options * 28
                 local screenHeight = screenGui.AbsoluteSize.Y
+
                 optionList.Size = UDim2.new(0, absSize.X, 0, listHeight)
+
                 if absPos.Y + absSize.Y + listHeight < screenHeight then
                     optionList.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 4)
                 else
                     optionList.Position = UDim2.new(0, absPos.X, 0, absPos.Y - listHeight - 4)
                 end
+
                 optionList.Visible = true
             end)
 
@@ -801,15 +769,19 @@ function RyzeCodeHub:CreateWindow(config)
             local conn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
                 if not esperando then return end
                 if tick() - tiempoActivacion < 0.2 then return end
+
                 if input.UserInputType == Enum.UserInputType.MouseMovement
                 or input.UserInputType == Enum.UserInputType.MouseWheel then
                     return
                 end
+
                 esperando = false
+
                 local nombreBonito = keyName(input.UserInputType)
                 if input.UserInputType == Enum.UserInputType.Keyboard then
                     nombreBonito = input.KeyCode.Name
                 end
+
                 currentKey = nombreBonito
                 button.Text = keybindName .. ": " .. tostring(currentKey)
                 pcall(callback, currentKey, input)
@@ -822,6 +794,9 @@ function RyzeCodeHub:CreateWindow(config)
             return button, function() return currentKey end
         end
 
+        -- ============================
+        -- BOTÓN SIMPLE
+        -- ============================
         function Tab:CreateButton(buttonConfig)
             buttonConfig = buttonConfig or {}
             local buttonName = buttonConfig.Name or "Button"
@@ -859,202 +834,8 @@ function RyzeCodeHub:CreateWindow(config)
         end
 
         -- ============================
-        -- CAJA DE TEXTO (Chat Bypass)
+        -- FILA: DROPDOWN + BOTÓN EXECUTE A LA DERECHA
         -- ============================
-        function Tab:CreateTextBox(textboxConfig)
-            textboxConfig = textboxConfig or {}
-            local textboxName = textboxConfig.Name or "TextBox"
-            local placeholder = textboxConfig.Placeholder or "Escribe aquí..."
-            local callback = textboxConfig.Callback or function() end
-            local order = textboxConfig.Order or 0
-
-            local container = Instance.new("Frame")
-            container.Name = "TextBox_" .. textboxName
-            container.Size = UDim2.new(1, -16, 0, 60)
-            container.BackgroundColor3 = Colors.ChatBox
-            container.BorderSizePixel = 0
-            container.ZIndex = 8
-            container.LayoutOrder = order
-            container.Parent = tabContent
-
-            local contCorner = Instance.new("UICorner")
-            contCorner.CornerRadius = UDim.new(0, 6)
-            contCorner.Parent = container
-
-            local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(1, -20, 0, 16)
-            label.Position = UDim2.new(0, 10, 0, 4)
-            label.BackgroundTransparency = 1
-            label.Text = textboxName
-            label.TextColor3 = Colors.TextDark
-            label.TextSize = 12
-            label.Font = Enum.Font.GothamBold
-            label.TextXAlignment = Enum.TextXAlignment.Left
-            label.ZIndex = 9
-            label.Parent = container
-
-            local textBox = Instance.new("TextBox")
-            textBox.Name = "Input"
-            textBox.Size = UDim2.new(1, -20, 0, 28)
-            textBox.Position = UDim2.new(0, 10, 0, 24)
-            textBox.BackgroundColor3 = Colors.Button
-            textBox.BorderSizePixel = 0
-            textBox.Text = ""
-            textBox.PlaceholderText = placeholder
-            textBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 130)
-            textBox.TextColor3 = Colors.TextLight
-            textBox.TextSize = 13
-            textBox.Font = Enum.Font.Gotham
-            textBox.TextXAlignment = Enum.TextXAlignment.Left
-            textBox.ClearTextOnFocus = false
-            textBox.ZIndex = 9
-            textBox.Parent = container
-
-            local tbCorner = Instance.new("UICorner")
-            tbCorner.CornerRadius = UDim.new(0, 4)
-            tbCorner.Parent = textBox
-
-            local tbPadding = Instance.new("UIPadding")
-            tbPadding.PaddingLeft = UDim.new(0, 8)
-            tbPadding.Parent = textBox
-
-            textBox.FocusLost:Connect(function(enterPressed)
-                if enterPressed then
-                    pcall(callback, textBox.Text)
-                end
-            end)
-
-            return textBox, function() return textBox.Text end
-        end
-
-        -- ============================
-        -- BOTÓN + TEXTBOX (Chat Bypass con enviar)
-        -- ============================
-        function Tab:CreateChatBypass(config)
-            config = config or {}
-            local name = config.Name or "Chat Bypass"
-            local placeholder = config.Placeholder or "Escribe el mensaje..."
-            local callback = config.Callback or function() end
-            local order = config.Order or 0
-
-            local container = Instance.new("Frame")
-            container.Name = "ChatBypass_" .. name
-            container.Size = UDim2.new(1, -16, 0, 80)
-            container.BackgroundColor3 = Colors.ChatBox
-            container.BorderSizePixel = 0
-            container.ZIndex = 8
-            container.LayoutOrder = order
-            container.Parent = tabContent
-
-            local contCorner = Instance.new("UICorner")
-            contCorner.CornerRadius = UDim.new(0, 6)
-            contCorner.Parent = container
-
-            local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(1, -20, 0, 16)
-            label.Position = UDim2.new(0, 10, 0, 4)
-            label.BackgroundTransparency = 1
-            label.Text = name
-            label.TextColor3 = Colors.TextDark
-            label.TextSize = 12
-            label.Font = Enum.Font.GothamBold
-            label.TextXAlignment = Enum.TextXAlignment.Left
-            label.ZIndex = 9
-            label.Parent = container
-
-            local textBox = Instance.new("TextBox")
-            textBox.Name = "Input"
-            textBox.Size = UDim2.new(1, -110, 0, 28)
-            textBox.Position = UDim2.new(0, 10, 0, 24)
-            textBox.BackgroundColor3 = Colors.Button
-            textBox.BorderSizePixel = 0
-            textBox.Text = ""
-            textBox.PlaceholderText = placeholder
-            textBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 130)
-            textBox.TextColor3 = Colors.TextLight
-            textBox.TextSize = 13
-            textBox.Font = Enum.Font.Gotham
-            textBox.TextXAlignment = Enum.TextXAlignment.Left
-            textBox.ClearTextOnFocus = false
-            textBox.ZIndex = 9
-            textBox.Parent = container
-
-            local tbCorner = Instance.new("UICorner")
-            tbCorner.CornerRadius = UDim.new(0, 4)
-            tbCorner.Parent = textBox
-
-            local tbPadding = Instance.new("UIPadding")
-            tbPadding.PaddingLeft = UDim.new(0, 8)
-            tbPadding.Parent = textBox
-
-            -- Botón ENVIAR
-            local sendBtn = Instance.new("TextButton")
-            sendBtn.Name = "Send"
-            sendBtn.Size = UDim2.new(0, 90, 0, 28)
-            sendBtn.Position = UDim2.new(1, -100, 0, 24)
-            sendBtn.BackgroundColor3 = Colors.Execute
-            sendBtn.BorderSizePixel = 0
-            sendBtn.Text = "SEND BYPASS"
-            sendBtn.TextColor3 = Colors.TextLight
-            sendBtn.TextSize = 12
-            sendBtn.Font = Enum.Font.GothamBold
-            sendBtn.ZIndex = 9
-            sendBtn.Parent = container
-
-            local sendCorner = Instance.new("UICorner")
-            sendCorner.CornerRadius = UDim.new(0, 4)
-            sendCorner.Parent = sendBtn
-
-            sendBtn.MouseEnter:Connect(function()
-                sendBtn.BackgroundColor3 = Colors.ExecuteHover
-            end)
-            sendBtn.MouseLeave:Connect(function()
-                sendBtn.BackgroundColor3 = Colors.Execute
-            end)
-
-            -- Vista previa del bypass (abajo)
-            local preview = Instance.new("TextLabel")
-            preview.Name = "Preview"
-            preview.Size = UDim2.new(1, -20, 0, 16)
-            preview.Position = UDim2.new(0, 10, 0, 56)
-            preview.BackgroundTransparency = 1
-            preview.Text = ""
-            preview.TextColor3 = Color3.fromRGB(120, 220, 140)
-            preview.TextSize = 12
-            preview.Font = Enum.Font.Gotham
-            preview.TextXAlignment = Enum.TextXAlignment.Left
-            preview.ZIndex = 9
-            preview.Parent = container
-
-            -- Actualizar vista previa cada vez que cambia el texto
-            textBox:GetPropertyChangedSignal("Text"):Connect(function()
-                if textBox.Text ~= "" then
-                    preview.Text = "→ " .. convertirChatBypass(textBox.Text)
-                else
-                    preview.Text = ""
-                end
-            end)
-
-            -- Al pulsar ENVIAR o Enter, se ejecuta el callback con el texto bypasseado
-            local function enviar()
-                if textBox.Text == "" then return end
-                local textoBypass = convertirChatBypass(textBox.Text)
-                pcall(callback, textoBypass, textBox.Text)
-                textBox.Text = ""
-                preview.Text = ""
-            end
-
-            sendBtn.MouseButton1Click:Connect(enviar)
-
-            textBox.FocusLost:Connect(function(enterPressed)
-                if enterPressed then
-                    enviar()
-                end
-            end)
-
-            return textBox, function() return textBox.Text end
-        end
-
         function Tab:CreateDropdownWithButton(config)
             config = config or {}
             local name = config.Name or "Bypass"
@@ -1175,16 +956,20 @@ function RyzeCodeHub:CreateWindow(config)
                     optionList.Visible = false
                     return
                 end
+
                 local absPos = row.AbsolutePosition
                 local absSize = dropdown.AbsoluteSize
                 local listHeight = #options * 28
                 local screenHeight = screenGui.AbsoluteSize.Y
+
                 optionList.Size = UDim2.new(0, absSize.X, 0, listHeight)
+
                 if absPos.Y + absSize.Y + listHeight < screenHeight then
                     optionList.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 4)
                 else
                     optionList.Position = UDim2.new(0, absPos.X, 0, absPos.Y - listHeight - 4)
                 end
+
                 optionList.Visible = true
             end)
 
@@ -1199,6 +984,127 @@ function RyzeCodeHub:CreateWindow(config)
             end)
 
             return row
+        end
+
+        -- ============================
+        -- CHAT BYPASS (TextBox + Botón SEND)
+        -- ============================
+        function Tab:CreateChatBypass(config)
+            config = config or {}
+            local name = config.Name or "CHAT BYPASS"
+            local placeholder = config.Placeholder or "Escribe aquí..."
+            local callback = config.Callback or function() end
+            local order = config.Order or 0
+
+            local container = Instance.new("Frame")
+            container.Name = "ChatBypass"
+            container.Size = UDim2.new(1, -16, 0, 90)
+            container.BackgroundColor3 = Colors.ChatBox
+            container.BorderSizePixel = 0
+            container.ZIndex = 8
+            container.LayoutOrder = order
+            container.Parent = tabContent
+
+            local contCorner = Instance.new("UICorner")
+            contCorner.CornerRadius = UDim.new(0, 6)
+            contCorner.Parent = container
+
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, -20, 0, 16)
+            label.Position = UDim2.new(0, 10, 0, 4)
+            label.BackgroundTransparency = 1
+            label.Text = name
+            label.TextColor3 = Colors.TextDark
+            label.TextSize = 12
+            label.Font = Enum.Font.GothamBold
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.ZIndex = 9
+            label.Parent = container
+
+            local textBox = Instance.new("TextBox")
+            textBox.Name = "Input"
+            textBox.Size = UDim2.new(1, -110, 0, 28)
+            textBox.Position = UDim2.new(0, 10, 0, 24)
+            textBox.BackgroundColor3 = Colors.Button
+            textBox.BorderSizePixel = 0
+            textBox.Text = ""
+            textBox.PlaceholderText = placeholder
+            textBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 130)
+            textBox.TextColor3 = Colors.TextLight
+            textBox.TextSize = 13
+            textBox.Font = Enum.Font.Gotham
+            textBox.TextXAlignment = Enum.TextXAlignment.Left
+            textBox.ClearTextOnFocus = false
+            textBox.ZIndex = 9
+            textBox.Parent = container
+
+            local tbCorner = Instance.new("UICorner")
+            tbCorner.CornerRadius = UDim.new(0, 4)
+            tbCorner.Parent = textBox
+
+            local tbPadding = Instance.new("UIPadding")
+            tbPadding.PaddingLeft = UDim.new(0, 8)
+            tbPadding.Parent = textBox
+
+            local sendBtn = Instance.new("TextButton")
+            sendBtn.Name = "Send"
+            sendBtn.Size = UDim2.new(0, 90, 0, 28)
+            sendBtn.Position = UDim2.new(1, -100, 0, 24)
+            sendBtn.BackgroundColor3 = Colors.Execute
+            sendBtn.BorderSizePixel = 0
+            sendBtn.Text = "SEND"
+            sendBtn.TextColor3 = Colors.TextLight
+            sendBtn.TextSize = 12
+            sendBtn.Font = Enum.Font.GothamBold
+            sendBtn.ZIndex = 9
+            sendBtn.Parent = container
+
+            local sendCorner = Instance.new("UICorner")
+            sendCorner.CornerRadius = UDim.new(0, 4)
+            sendCorner.Parent = sendBtn
+
+            sendBtn.MouseEnter:Connect(function()
+                sendBtn.BackgroundColor3 = Colors.ExecuteHover
+            end)
+            sendBtn.MouseLeave:Connect(function()
+                sendBtn.BackgroundColor3 = Colors.Execute
+            end)
+
+            local preview = Instance.new("TextLabel")
+            preview.Name = "Preview"
+            preview.Size = UDim2.new(1, -20, 0, 16)
+            preview.Position = UDim2.new(0, 10, 0, 60)
+            preview.BackgroundTransparency = 1
+            preview.Text = ""
+            preview.TextColor3 = Color3.fromRGB(120, 220, 140)
+            preview.TextSize = 12
+            preview.Font = Enum.Font.Gotham
+            preview.TextXAlignment = Enum.TextXAlignment.Left
+            preview.ZIndex = 9
+            preview.Parent = container
+
+            textBox:GetPropertyChangedSignal("Text"):Connect(function()
+                if textBox.Text ~= "" then
+                    preview.Text = "→ " .. convertirChatBypass(textBox.Text)
+                else
+                    preview.Text = ""
+                end
+            end)
+
+            local function enviar()
+                if textBox.Text == "" then return end
+                local textoBypass = convertirChatBypass(textBox.Text)
+                pcall(callback, textoBypass, textBox.Text)
+                textBox.Text = ""
+                preview.Text = ""
+            end
+
+            sendBtn.MouseButton1Click:Connect(enviar)
+            textBox.FocusLost:Connect(function(enterPressed)
+                if enterPressed then enviar() end
+            end)
+
+            return textBox, function() return textBox.Text end
         end
 
         tabs[#tabs + 1] = { Button = tabButton, Content = tabContent }
@@ -1235,7 +1141,6 @@ function RyzeCodeHub:CreateWindow(config)
     Window._fovCircle = fovCircle
     Window._espFrame = espFrame
     Window._addCleanup = addCleanup
-    Window._convertirChatBypass = convertirChatBypass
 
     return Window
 end
@@ -1465,10 +1370,18 @@ MiscTab:CreateSlider({
 
 MiscTab:CreateDropdownWithButton({
     Name = "Fly Bypass",
-    Options = { "ANCHOR", "BODYVELOCITY", "LINEARVELOCITY", "CFRAME", "PLATFORM" },
+    Options = {
+        "ANCHOR",
+        "BODYVELOCITY",
+        "LINEARVELOCITY",
+        "CFRAME",
+        "PLATFORM"
+    },
     CurrentOption = "ANCHOR",
     Order = 5,
-    DropdownCallback = function(opt) flyBypassMode = opt end,
+    DropdownCallback = function(opt)
+        flyBypassMode = opt
+    end,
     ButtonCallback = function(opt)
         if flyHRP then flyHRP.Anchored = false end
         if flyBV then flyBV:Destroy() flyBV = nil end
@@ -1483,7 +1396,7 @@ MiscTab:CreateDropdownWithButton({
         if not hrp then return end
 
         if opt == "ANCHOR" then
-            print("[Ryze.xyz] Bypass: ANCHOR")
+            print("[Ryze.xyz] Bypass: ANCHOR aplicado")
         elseif opt == "BODYVELOCITY" then
             flyBV = Instance.new("BodyVelocity")
             flyBV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
@@ -1494,7 +1407,7 @@ MiscTab:CreateDropdownWithButton({
             flyBG.P = 1000
             flyBG.D = 50
             flyBG.Parent = hrp
-            print("[Ryze.xyz] Bypass: BODYVELOCITY")
+            print("[Ryze.xyz] Bypass: BODYVELOCITY aplicado")
         elseif opt == "LINEARVELOCITY" then
             flyLV = Instance.new("LinearVelocity")
             flyLV.MaxForce = math.huge
@@ -1504,9 +1417,9 @@ MiscTab:CreateDropdownWithButton({
             flyAlignPos.MaxTorque = math.huge
             flyAlignPos.PrimaryAxisOnly = false
             flyAlignPos.Parent = hrp
-            print("[Ryze.xyz] Bypass: LINEARVELOCITY")
+            print("[Ryze.xyz] Bypass: LINEARVELOCITY aplicado")
         elseif opt == "CFRAME" then
-            print("[Ryze.xyz] Bypass: CFRAME")
+            print("[Ryze.xyz] Bypass: CFRAME aplicado")
         elseif opt == "PLATFORM" then
             flyPlatform = Instance.new("Part")
             flyPlatform.Name = "RyzeFlyPlatform"
@@ -1516,7 +1429,7 @@ MiscTab:CreateDropdownWithButton({
             flyPlatform.CanCollide = true
             flyPlatform.Transparency = 1
             flyPlatform.Parent = workspace
-            print("[Ryze.xyz] Bypass: PLATFORM")
+            print("[Ryze.xyz] Bypass: PLATFORM aplicado")
         end
     end
 })
@@ -1551,10 +1464,9 @@ MiscTab:CreateChatBypass({
     Placeholder = "Escribe lo que quieras...",
     Order = 8,
     Callback = function(textoBypass, textoOriginal)
-        print("[Ryze.xyz] Texto original:", textoOriginal)
-        print("[Ryze.xyz] Texto bypasseado:", textoBypass)
+        print("[Ryze.xyz] Original:", textoOriginal)
+        print("[Ryze.xyz] Bypass:", textoBypass)
 
-        -- Enviamos el mensaje al chat por el canal por defecto
         local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
         if chatEvent then
             local sayMessageRequest = chatEvent:FindFirstChild("SayMessageRequest")
@@ -1564,7 +1476,6 @@ MiscTab:CreateChatBypass({
             end
         end
 
-        -- Si no encontramos el chat event, usamos el chat nativo
         pcall(function()
             game:GetService("Chat"):Chat(LocalPlayer.Character, textoBypass, Enum.ChatColor.White)
         end)
@@ -1782,7 +1693,6 @@ addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     cam.CFrame = cframeOriginal
 end))
 
--- ESP
 addConn(RunService.RenderStepped:Connect(function()
     if wallhackEnabled then
         for _, jugador in ipairs(Players:GetPlayers()) do
@@ -1813,6 +1723,7 @@ addConn(RunService.RenderStepped:Connect(function()
             end
         end
     end
+
     if skeletonEnabled then
         local cam = workspace.CurrentCamera
         if not cam then return end
@@ -1890,6 +1801,7 @@ addConn(RunService.RenderStepped:Connect(function()
             end
         end
     end
+
     if showHealthEnabled then
         local cam = workspace.CurrentCamera
         if not cam then return end
