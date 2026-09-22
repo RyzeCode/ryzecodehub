@@ -21,10 +21,6 @@ local Colors = {
     ButtonHover  = Color3.fromRGB(70, 70, 85),
     TextDark     = Color3.fromRGB(230, 230, 240),
     TextLight    = Color3.fromRGB(255, 255, 255),
-    Minimize     = Color3.fromRGB(50, 50, 60),
-    MinimizeHover= Color3.fromRGB(70, 70, 85),
-    Close        = Color3.fromRGB(50, 50, 60),
-    CloseHover   = Color3.fromRGB(200, 60, 60),
     Bubble       = Color3.fromRGB(20, 60, 120),
     BubbleHover  = Color3.fromRGB(30, 90, 170),
     Border       = Color3.fromRGB(0, 0, 0),
@@ -60,7 +56,6 @@ function RyzeCodeHub:CreateWindow(config)
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = mainFrame
 
-    -- Borde negro exterior
     local border = Instance.new("UIStroke")
     border.Color = Colors.Border
     border.Thickness = 2
@@ -88,39 +83,31 @@ function RyzeCodeHub:CreateWindow(config)
     title.Font = Enum.Font.GothamBold
     title.Parent = titleBar
 
-    -- Botón minimizar
+    -- Botón minimizar (sin fondo)
     local minimizeBtn = Instance.new("TextButton")
     minimizeBtn.Name = "MinimizeBtn"
     minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
     minimizeBtn.Position = UDim2.new(1, -70, 0.5, -15)
-    minimizeBtn.BackgroundColor3 = Colors.Minimize
+    minimizeBtn.BackgroundTransparency = 1
     minimizeBtn.BorderSizePixel = 0
     minimizeBtn.Text = "—"
     minimizeBtn.TextColor3 = Colors.TextLight
-    minimizeBtn.TextSize = 20
+    minimizeBtn.TextSize = 22
     minimizeBtn.Font = Enum.Font.GothamBold
     minimizeBtn.Parent = titleBar
 
-    local minCorner = Instance.new("UICorner")
-    minCorner.CornerRadius = UDim.new(0, 6)
-    minCorner.Parent = minimizeBtn
-
-    -- Botón cerrar
+    -- Botón cerrar (sin fondo)
     local closeBtn = Instance.new("TextButton")
     closeBtn.Name = "CloseBtn"
     closeBtn.Size = UDim2.new(0, 30, 0, 30)
     closeBtn.Position = UDim2.new(1, -35, 0.5, -15)
-    closeBtn.BackgroundColor3 = Colors.Close
+    closeBtn.BackgroundTransparency = 1
     closeBtn.BorderSizePixel = 0
     closeBtn.Text = "✕"
     closeBtn.TextColor3 = Colors.TextLight
     closeBtn.TextSize = 18
     closeBtn.Font = Enum.Font.GothamBold
     closeBtn.Parent = titleBar
-
-    local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 6)
-    closeCorner.Parent = closeBtn
 
     -- Línea negra entre la barra azul y el resto
     local divider = Instance.new("Frame")
@@ -185,24 +172,24 @@ function RyzeCodeHub:CreateWindow(config)
         mainFrame.Visible = true
     end)
 
-    -- Minimizar
+    -- Minimizar (hover: solo cambia el color del texto)
     minimizeBtn.MouseEnter:Connect(function()
-        minimizeBtn.BackgroundColor3 = Colors.MinimizeHover
+        minimizeBtn.TextColor3 = Color3.fromRGB(180, 200, 230)
     end)
     minimizeBtn.MouseLeave:Connect(function()
-        minimizeBtn.BackgroundColor3 = Colors.Minimize
+        minimizeBtn.TextColor3 = Colors.TextLight
     end)
     minimizeBtn.MouseButton1Click:Connect(function()
         mainFrame.Visible = false
         bubble.Visible = true
     end)
 
-    -- Cerrar
+    -- Cerrar (hover: texto rojo claro)
     closeBtn.MouseEnter:Connect(function()
-        closeBtn.BackgroundColor3 = Colors.CloseHover
+        closeBtn.TextColor3 = Color3.fromRGB(255, 120, 120)
     end)
     closeBtn.MouseLeave:Connect(function()
-        closeBtn.BackgroundColor3 = Colors.Close
+        closeBtn.TextColor3 = Colors.TextLight
     end)
     closeBtn.MouseButton1Click:Connect(function()
         screenGui:Destroy()
