@@ -75,7 +75,7 @@ function RyzeCodeHub:CreateWindow(config)
     mainFrame.BorderSizePixel = 0
     mainFrame.Active = true
     mainFrame.Draggable = true
-    mainFrame.ClipsDescendants = false
+    mainFrame.ClipsDescendants = true
     mainFrame.Visible = true
     mainFrame.ZIndex = 5
     mainFrame.Parent = screenGui
@@ -166,7 +166,7 @@ function RyzeCodeHub:CreateWindow(config)
     contentFrame.Position = UDim2.new(0, 152, 0, 42)
     contentFrame.BackgroundColor3 = Colors.Content
     contentFrame.BorderSizePixel = 0
-    contentFrame.ClipsDescendants = false
+    contentFrame.ClipsDescendants = true
     contentFrame.ZIndex = 6
     contentFrame.Parent = mainFrame
 
@@ -225,7 +225,6 @@ function RyzeCodeHub:CreateWindow(config)
         screenGui:Destroy()
     end)
 
-    -- Círculo FOV
     local fovCircle = Instance.new("Frame")
     fovCircle.Name = "FovCircle"
     fovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -252,7 +251,6 @@ function RyzeCodeHub:CreateWindow(config)
         fovCircle.Size = UDim2.new(0, diametro, 0, diametro)
     end
 
-    -- ScreenGui para ESP
     local espGui = Instance.new("ScreenGui")
     espGui.Name = "Ryze_ESP"
     espGui.ResetOnSpawn = false
@@ -292,7 +290,7 @@ function RyzeCodeHub:CreateWindow(config)
         tabContent.CanvasSize = UDim2.new(0, 0, 0, 0)
         tabContent.Visible = false
         tabContent.ZIndex = 7
-        tabContent.ClipsDescendants = false
+        tabContent.ClipsDescendants = true
         tabContent.Parent = contentFrame
 
         local layout = Instance.new("UIListLayout")
@@ -307,7 +305,7 @@ function RyzeCodeHub:CreateWindow(config)
         padding.Parent = tabContent
 
         layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            tabContent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 200)
+            tabContent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 40)
         end)
 
         local Tab = {}
@@ -718,6 +716,7 @@ local aimActive = false
 local boneAim = "HEAD"
 local targetDead = false
 local smoothValue = 50
+local wallCheck = false
 
 -- Estado ESP
 local espFolder = AutoWindow._espFolder
@@ -756,7 +755,6 @@ AimTab:CreateSlider({
     CurrentValue = 50,
     Callback = function(valor)
         smoothValue = valor
-        print("[Ryze.xyz] SMOOTH:", valor)
     end
 })
 
@@ -795,6 +793,14 @@ AimTab:CreateToggle({
     CurrentValue = false,
     Callback = function(valor)
         targetDead = valor
+    end
+})
+
+AimTab:CreateToggle({
+    Name = "WALL CHECK",
+    CurrentValue = false,
+    Callback = function(valor)
+        wallCheck = valor
     end
 })
 
@@ -853,6 +859,25 @@ local function obtenerPuntoObjetivo(personaje)
         or personaje:FindFirstChild("Torso")
 end
 
+-- Raycast para wall check
+local function hayParedEntre(desde, hasta, ignorarPersonaje)
+    local rayParams = RaycastParams.new()
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    local filtros = { }
+    if LocalPlayer.Character then
+        table.insert(filtros, LocalPlayer.Character)
+    end
+    if ignorarPersonaje then
+        table.insert(filtros, ignorarPersonaje)
+    end
+    rayParams.FilterDescendantsInstances = filtros
+    rayParams.IgnoreWater = true
+
+    local direccion = hasta - desde
+    local resultado = workspace:Raycast(desde, direccion, rayParams)
+    return resultado ~= nil
+end
+
 local function obtenerJugadorCercano()
     local cam = workspace.CurrentCamera
     if not cam then return nil end
@@ -873,6 +898,13 @@ local function obtenerJugadorCercano()
 
                     local puntoObjetivo = obtenerPuntoObjetivo(personaje)
                     if puntoObjetivo then
+                        -- WALL CHECK: si está activado y hay pared, saltamos
+                        if wallCheck then
+                            if hayParedEntre(cam.CFrame.Position, puntoObjetivo.Position, personaje) then
+                                continue
+                            end
+                        end
+
                         local distanciaStuds = (puntoObjetivo.Position - cam.CFrame.Position).Magnitude
                         local distanciaMetros = distanciaStuds * 0.28
 
@@ -904,8 +936,6 @@ RunService.RenderStepped:Connect(function()
 
     local objetivo = obtenerJugadorCercano()
     if objetivo then
-        -- SMOOTH 0 = descarado (factor 1)
-        -- SMOOTH 100 = muy suave (factor 0.03)
         local factor = 1 - (smoothValue / 100)
         factor = math.clamp(factor, 0.03, 1)
 
