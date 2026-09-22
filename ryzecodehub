@@ -13,12 +13,6 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================
--- IDs DE IMÁGENES
--- ============================
-local ID_LOGO_R = 7077827551269
-local ID_FONDO_TITLEBAR = 119390880642926
-
--- ============================
 -- COLORES
 -- ============================
 local Colors = {
@@ -99,6 +93,7 @@ function RyzeCodeHub:CreateWindow(config)
     border.Thickness = 2
     border.Parent = mainFrame
 
+    -- Barra de título (azul oscuro original)
     local titleBar = Instance.new("Frame")
     titleBar.Name = "TitleBar"
     titleBar.Size = UDim2.new(1, 0, 0, 40)
@@ -106,17 +101,6 @@ function RyzeCodeHub:CreateWindow(config)
     titleBar.BorderSizePixel = 0
     titleBar.ZIndex = 6
     titleBar.Parent = mainFrame
-
-    if ID_FONDO_TITLEBAR and ID_FONDO_TITLEBAR ~= 0 then
-        local fondoImagen = Instance.new("ImageLabel")
-        fondoImagen.Name = "FondoTitulo"
-        fondoImagen.Size = UDim2.new(1, 0, 1, 0)
-        fondoImagen.BackgroundTransparency = 1
-        fondoImagen.Image = "rbxassetid://" .. ID_FONDO_TITLEBAR
-        fondoImagen.ScaleType = Enum.ScaleType.Stretch
-        fondoImagen.ZIndex = 6
-        fondoImagen.Parent = titleBar
-    end
 
     local titleCorner = Instance.new("UICorner")
     titleCorner.CornerRadius = UDim.new(0, 8)
@@ -191,6 +175,7 @@ function RyzeCodeHub:CreateWindow(config)
     contentFrame.ZIndex = 6
     contentFrame.Parent = mainFrame
 
+    -- Burbuja minimizada (R azul original)
     local bubble = Instance.new("TextButton")
     bubble.Name = "Bubble"
     bubble.Size = UDim2.new(0, 60, 0, 60)
@@ -198,28 +183,13 @@ function RyzeCodeHub:CreateWindow(config)
     bubble.AnchorPoint = Vector2.new(0, 0)
     bubble.BackgroundColor3 = Colors.Bubble
     bubble.BorderSizePixel = 0
-    bubble.Text = ""
+    bubble.Text = "R"
     bubble.TextColor3 = Colors.TextLight
     bubble.TextSize = 32
     bubble.Font = Enum.Font.GothamBold
     bubble.Visible = false
     bubble.Active = true
     bubble.Parent = screenGui
-
-    if ID_LOGO_R and ID_LOGO_R ~= 0 then
-        local logoImg = Instance.new("ImageLabel")
-        logoImg.Name = "LogoR"
-        logoImg.Size = UDim2.new(1, 0, 1, 0)
-        logoImg.BackgroundTransparency = 1
-        logoImg.Image = "rbxassetid://" .. ID_LOGO_R
-        logoImg.ScaleType = Enum.ScaleType.Fit
-        logoImg.ZIndex = 2
-        logoImg.Parent = bubble
-
-        bubble.BackgroundTransparency = 1
-    else
-        bubble.Text = "R"
-    end
 
     local bubbleCorner = Instance.new("UICorner")
     bubbleCorner.CornerRadius = UDim.new(1, 0)
@@ -228,9 +198,6 @@ function RyzeCodeHub:CreateWindow(config)
     local bubbleBorder = Instance.new("UIStroke")
     bubbleBorder.Color = Colors.Border
     bubbleBorder.Thickness = 2
-    if ID_LOGO_R and ID_LOGO_R ~= 0 then
-        bubbleBorder.Transparency = 1
-    end
     bubbleBorder.Parent = bubble
 
     local bubbleDragging = false
@@ -238,14 +205,10 @@ function RyzeCodeHub:CreateWindow(config)
     local bubbleStartMouse = nil
 
     bubble.MouseEnter:Connect(function()
-        if not (ID_LOGO_R and ID_LOGO_R ~= 0) then
-            bubble.BackgroundColor3 = Colors.BubbleHover
-        end
+        bubble.BackgroundColor3 = Colors.BubbleHover
     end)
     bubble.MouseLeave:Connect(function()
-        if not (ID_LOGO_R and ID_LOGO_R ~= 0) then
-            bubble.BackgroundColor3 = Colors.Bubble
-        end
+        bubble.BackgroundColor3 = Colors.Bubble
     end)
 
     bubble.InputBegan:Connect(function(input)
@@ -904,8 +867,7 @@ AimTab:CreateToggle({
     Callback = function(valor)
         if AutoWindow._fovCircle then
             AutoWindow._fovCircle.Visible = valor
-        end
-    end
+        end    end
 })
 
 AimTab:CreateSlider({
@@ -1030,7 +992,6 @@ EspTab:CreateToggle({
     Order = 4,
     Callback = function(valor)
         teamCheckEnabled = valor
-        -- Limpiamos todos los efectos al cambiar el estado
         for _, hijo in ipairs(espFrame:GetChildren()) do
             if hijo.Name:sub(1, 10) == "WallhackHL" then
                 hijo:Destroy()
@@ -1081,7 +1042,6 @@ local function estaMuerto(personaje)
     return false
 end
 
--- TEAM CHECK: comprueba si el jugador está en tu mismo equipo
 local function esDelMismoEquipo(jugador)
     if not LocalPlayer.Team then return false end
     if not jugador.Team then return false end
@@ -1148,7 +1108,6 @@ local function obtenerJugadorCercano(forzarCabeza, ignorarParedes)
                     continue
                 end
 
-                -- TEAM CHECK en AIM
                 if teamCheckEnabled and esDelMismoEquipo(jugador) then
                     continue
                 end
@@ -1264,15 +1223,12 @@ addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     cam.CFrame = cframeOriginal
 end))
 
--- ============================
 -- ESP: WALLHACK + SKELETON + HEALTH
--- ============================
 addConn(RunService.RenderStepped:Connect(function()
     -- WALLHACK
     if wallhackEnabled then
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
-                -- TEAM CHECK
                 if teamCheckEnabled and esDelMismoEquipo(jugador) then
                     local hlViejo = espFrame:FindFirstChild("WallhackHL_" .. jugador.Name)
                     if hlViejo then hlViejo:Destroy() end
@@ -1319,7 +1275,6 @@ addConn(RunService.RenderStepped:Connect(function()
 
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
-                -- TEAM CHECK
                 if teamCheckEnabled and esDelMismoEquipo(jugador) then
                     local skViejo = espFrame:FindFirstChild("Skeleton_" .. jugador.Character.Name)
                     if skViejo then skViejo:Destroy() end
@@ -1395,7 +1350,6 @@ addConn(RunService.RenderStepped:Connect(function()
 
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
-                -- TEAM CHECK
                 if teamCheckEnabled and esDelMismoEquipo(jugador) then
                     local hbViejo = espFrame:FindFirstChild("HealthBar_" .. jugador.Name)
                     if hbViejo then hbViejo:Destroy() end
