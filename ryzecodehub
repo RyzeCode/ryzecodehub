@@ -24,9 +24,12 @@ local Colors = {
     Bubble       = Color3.fromRGB(20, 60, 120),
     BubbleHover  = Color3.fromRGB(30, 90, 170),
     Border       = Color3.fromRGB(0, 0, 0),
-    ToggleOn     = Color3.fromRGB(30, 144, 255),   -- azul del toggle activo
-    ToggleOff    = Color3.fromRGB(80, 80, 90),     -- gris del toggle apagado
-    ToggleCircle = Color3.fromRGB(255, 255, 255),  -- blanco del círculo
+    ToggleOn     = Color3.fromRGB(30, 144, 255),
+    ToggleOff    = Color3.fromRGB(80, 80, 90),
+    ToggleCircle = Color3.fromRGB(255, 255, 255),
+    SliderFill   = Color3.fromRGB(30, 144, 255),   -- relleno azul del slider
+    SliderEmpty  = Color3.fromRGB(80, 80, 90),     -- fondo gris del slider
+    SliderKnob   = Color3.fromRGB(255, 255, 255),  -- círculo blanco
 }
 
 -- ============================
@@ -112,7 +115,7 @@ function RyzeCodeHub:CreateWindow(config)
     closeBtn.Font = Enum.Font.GothamBold
     closeBtn.Parent = titleBar
 
-    -- Línea negra horizontal
+    -- Línea horizontal
     local divider = Instance.new("Frame")
     divider.Name = "Divider"
     divider.Size = UDim2.new(1, 0, 0, 2)
@@ -131,7 +134,7 @@ function RyzeCodeHub:CreateWindow(config)
     tabList.BorderSizePixel = 0
     tabList.Parent = mainFrame
 
-    -- Línea negra vertical
+    -- Línea vertical
     local verticalDivider = Instance.new("Frame")
     verticalDivider.Name = "VerticalDivider"
     verticalDivider.Size = UDim2.new(0, 2, 1, -42)
@@ -209,7 +212,9 @@ function RyzeCodeHub:CreateWindow(config)
         screenGui:Destroy()
     end)
 
-    -- Objeto Window
+    -- ============================
+    -- OBJETO WINDOW
+    -- ============================
     local Window = {}
     local tabs = {}
 
@@ -255,6 +260,9 @@ function RyzeCodeHub:CreateWindow(config)
 
         local Tab = {}
 
+        -- ============================
+        -- BOTÓN
+        -- ============================
         function Tab:CreateButton(buttonConfig)
             buttonConfig = buttonConfig or {}
             local buttonName = buttonConfig.Name or "Button"
@@ -288,6 +296,9 @@ function RyzeCodeHub:CreateWindow(config)
             return button
         end
 
+        -- ============================
+        -- TOGGLE
+        -- ============================
         function Tab:CreateToggle(toggleConfig)
             toggleConfig = toggleConfig or {}
             local toggleName = toggleConfig.Name or "Toggle"
@@ -314,7 +325,6 @@ function RyzeCodeHub:CreateWindow(config)
             paddingText.PaddingLeft = UDim.new(0, 10)
             paddingText.Parent = toggle
 
-            -- Indicador (fondo del toggle)
             local indicator = Instance.new("Frame")
             indicator.Size = UDim2.new(0, 40, 0, 20)
             indicator.Position = UDim2.new(1, -50, 0.5, -10)
@@ -326,7 +336,6 @@ function RyzeCodeHub:CreateWindow(config)
             indCorner.CornerRadius = UDim.new(1, 0)
             indCorner.Parent = indicator
 
-            -- Círculo
             local circle = Instance.new("Frame")
             circle.Size = UDim2.new(0, 16, 0, 16)
             circle.Position = currentValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
@@ -346,6 +355,134 @@ function RyzeCodeHub:CreateWindow(config)
             end)
 
             return toggle
+        end
+
+        -- ============================
+        -- SLIDER
+        -- ============================
+        function Tab:CreateSlider(sliderConfig)
+            sliderConfig = sliderConfig or {}
+            local sliderName = sliderConfig.Name or "Slider"
+            local minValue = sliderConfig.Min or 0
+            local maxValue = sliderConfig.Max or 100
+            local currentValue = sliderConfig.CurrentValue or minValue
+            local callback = sliderConfig.Callback or function() end
+
+            -- Contenedor del slider
+            local container = Instance.new("TextButton")
+            container.Name = "Slider_" .. sliderName
+            container.Size = UDim2.new(1, -16, 0, 50)
+            container.BackgroundColor3 = Colors.Button
+            container.BorderSizePixel = 0
+            container.Text = ""
+            container.AutoButtonColor = false
+            container.Parent = tabContent
+
+            local contCorner = Instance.new("UICorner")
+            contCorner.CornerRadius = UDim.new(0, 6)
+            contCorner.Parent = container
+
+            -- Texto del nombre
+            local label = Instance.new("TextLabel")
+            label.Name = "Label"
+            label.Size = UDim2.new(1, -80, 0, 20)
+            label.Position = UDim2.new(0, 10, 0, 4)
+            label.BackgroundTransparency = 1
+            label.Text = sliderName
+            label.TextColor3 = Colors.TextDark
+            label.TextSize = 14
+            label.Font = Enum.Font.Gotham
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Parent = container
+
+            -- Texto del valor (esquina derecha)
+            local valueLabel = Instance.new("TextLabel")
+            valueLabel.Name = "ValueLabel"
+            valueLabel.Size = UDim2.new(0, 70, 0, 20)
+            valueLabel.Position = UDim2.new(1, -75, 0, 4)
+            valueLabel.BackgroundTransparency = 1
+            valueLabel.Text = tostring(currentValue)
+            valueLabel.TextColor3 = Colors.TextDark
+            valueLabel.TextSize = 14
+            valueLabel.Font = Enum.Font.GothamBold
+            valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+            valueLabel.Parent = container
+
+            -- Barra de fondo (gris)
+            local bar = Instance.new("Frame")
+            bar.Name = "Bar"
+            bar.Size = UDim2.new(1, -20, 0, 8)
+            bar.Position = UDim2.new(0, 10, 1, -14)
+            bar.BackgroundColor3 = Colors.SliderEmpty
+            bar.BorderSizePixel = 0
+            bar.Parent = container
+
+            local barCorner = Instance.new("UICorner")
+            barCorner.CornerRadius = UDim.new(1, 0)
+            barCorner.Parent = bar
+
+            -- Relleno (azul) del slider
+            local fill = Instance.new("Frame")
+            fill.Name = "Fill"
+            fill.Size = UDim2.new(0, 0, 1, 0)
+            fill.BackgroundColor3 = Colors.SliderFill
+            fill.BorderSizePixel = 0
+            fill.Parent = bar
+
+            local fillCorner = Instance.new("UICorner")
+            fillCorner.CornerRadius = UDim.new(1, 0)
+            fillCorner.Parent = fill
+
+            -- Círculo (knob)
+            local knob = Instance.new("Frame")
+            knob.Name = "Knob"
+            knob.Size = UDim2.new(0, 16, 0, 16)
+            knob.Position = UDim2.new(0, -8, 0.5, -8)
+            knob.BackgroundColor3 = Colors.SliderKnob
+            knob.BorderSizePixel = 0
+            knob.ZIndex = 2
+            knob.Parent = bar
+
+            local knobCorner = Instance.new("UICorner")
+            knobCorner.CornerRadius = UDim.new(1, 0)
+            knobCorner.Parent = knob
+
+            -- Función para actualizar según la posición del ratón
+            local function actualizarDesdeInput(inputX)
+                local barAbsX = bar.AbsolutePosition.X
+                local barAbsWidth = bar.AbsoluteSize.X
+                local relative = math.clamp((inputX - barAbsX) / barAbsWidth, 0, 1)
+
+                local newValue = math.floor(minValue + (maxValue - minValue) * relative + 0.5)
+                currentValue = newValue
+
+                fill.Size = UDim2.new(relative, 0, 1, 0)
+                knob.Position = UDim2.new(relative, -8, 0.5, -8)
+                valueLabel.Text = tostring(newValue)
+
+                pcall(callback, newValue)
+            end
+
+            -- Detectar clic y arrastre sobre la barra
+            bar.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    actualizarDesdeInput(input.Position.X)
+                end
+            end)
+
+            bar.InputChanged:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                    actualizarDesdeInput(input.Position.X)
+                end
+            end)
+
+            -- Inicializar el slider con el valor actual
+            local initialRelative = (currentValue - minValue) / (maxValue - minValue)
+            fill.Size = UDim2.new(initialRelative, 0, 1, 0)
+            knob.Position = UDim2.new(initialRelative, -8, 0.5, -8)
+            valueLabel.Text = tostring(currentValue)
+
+            return container
         end
 
         tabs[#tabs + 1] = { Button = tabButton, Content = tabContent }
@@ -388,12 +525,18 @@ AutoTab:CreateToggle({
     CurrentValue = false,
     Callback = function(valor)
         print("[Ryze.xyz] Aimbot:", valor)
-        -- Aquí va la lógica del aimbot cuando esté activado
-        if valor then
-            -- activar aimbot
-        else
-            -- desactivar aimbot
-        end
+    end
+})
+
+AutoTab:CreateSlider({
+    Name = "FOV",
+    Min = 1,
+    Max = 120,
+    CurrentValue = 70,
+    Callback = function(valor)
+        print("[Ryze.xyz] FOV:", valor)
+        -- Aquí aplicas el FOV al juego si quieres
+        -- workspace.CurrentCamera.FieldOfView = valor
     end
 })
 
