@@ -782,4 +782,513 @@ end
 local AutoWindow = RyzeCodeHub:CreateWindow({ Name = "Ryze.xyz" })
 local AimTab = AutoWindow:CreateTab("AIM")
 local SilentTab = AutoWindow:CreateTab("SILENT")
-local EspTab =
+local EspTab = AutoWindow:CreateTab("ESP")
+
+local addCleanup = AutoWindow._addCleanup
+
+-- Estado
+local aimbotEnabled = false
+local fovValue = 70
+local aimDistance = 600
+local toggleKey = "F"
+local aimActive = false
+local boneAim = "HEAD"
+local targetDead = false
+local smoothValue = 50
+local wallCheck = false
+local silentAimEnabled = false
+
+local espFolder = AutoWindow._espFolder
+local wallhackEnabled = false
+local skeletonEnabled = false
+local skeletons = {}
+
+-- ============================
+-- AIM: CONTROLES
+-- ============================
+AimTab:CreateToggle({
+    Name = "Aimbot",
+    CurrentValue = false,
+    Callback = function(valor)
+        aimbotEnabled = valor
+    end
+})
+
+AimTab:CreateSlider({
+    Name = "FOV",
+    Min = 1,
+    Max = 120,
+    CurrentValue = 70,
+    Callback = function(valor)
+        fovValue = valor
+        if AutoWindow._actualizarFovCircle then
+            AutoWindow._actualizarFovCircle(valor)
+        end
+    end
+})
+
+AimTab:CreateSlider({
+    Name = "SMOOTH",
+    Min = 0,
+    Max = 100,
+    CurrentValue = 50,
+    Callback = function(valor)
+        smoothValue = valor
+    end
+})
+
+AimTab:CreateToggle({
+    Name = "Show FOV",
+    CurrentValue = false,
+    Callback = function(valor)
+        if AutoWindow._fovCircle then
+            AutoWindow._fovCircle.Visible = valor
+        end
+    end
+})
+
+AimTab:CreateDropdown({
+    Name = "AIM DISTANCE",
+    Options = { "200M", "600M", "1000M" },
+    CurrentOption = "600M",
+    Callback = function(opt)
+        if opt == "200M" then aimDistance = 200
+        elseif opt == "600M" then aimDistance = 600
+        elseif opt == "1000M" then aimDistance = 1000 end
+    end
+})
+
+AimTab:CreateDropdown({
+    Name = "BONE AIM",
+    Options = { "HEAD", "BODY" },
+    CurrentOption = "HEAD",
+    Callback = function(opt)
+        boneAim = opt
+    end
+})
+
+AimTab:CreateToggle({
+    Name = "TARGET DEAD",
+    CurrentValue = false,
+    Callback = function(valor)
+        targetDead = valor
+        print("[Ryze.xyz] TARGET DEAD:", valor)
+    end
+})
+
+AimTab:CreateToggle({
+    Name = "WALL CHECK",
+    CurrentValue = false,
+    Callback = function(valor)
+        wallCheck = valor
+    end
+})
+
+AimTab:CreateKeybind({
+    Name = "TOGGLE AIM",
+    DefaultKey = "F",
+    Callback = function(nombre, input)
+        toggleKey = nombre
+    end
+})
+
+-- ============================
+-- SILENT: CONTROLES
+-- ============================
+SilentTab:CreateToggle({
+    Name = "SILENT AIM",
+    CurrentValue = false,
+    Callback = function(valor)
+        silentAimEnabled = valor
+    end
+})
+
+-- ============================
+-- ESP: CONTROLES
+-- ============================
+EspTab:CreateToggle({
+    Name = "Wallhack",
+    CurrentValue = false,
+    Callback = function(valor)
+        wallhackEnabled = valor
+        if not valor then
+            for _, hijo in ipairs(espFolder:GetChildren()) do
+                if hijo.Name:sub(1, 10) == "WallhackHL" then
+                    hijo:Destroy()
+                end
+            end
+        end
+    end
+})
+
+EspTab:CreateToggle({
+    Name = "Skeleton",
+    CurrentValue = false,
+    Callback = function(valor)
+        skeletonEnabled = valor
+        if not valor then
+            for _, hijo in ipairs(espFolder:GetChildren()) do
+                if hijo.Name:sub(1, 9) == "Skeleton_" then
+                    hijo:Destroy()
+                end
+            end
+            skeletons = {}
+        end
+    end
+})
+
+-- ============================
+-- AIM: LÓGICA
+-- ============================
+
+-- Comprobación de "muerto" mejorada:
+-- Un personaje está muerto si:
+-- 1. No tiene Humanoid
+-- 2. El Humanoid tiene Health <= 0
+-- 3. El Humanoid está en estado Dead
+-- 4. Tiene el tag "Dead" en el personaje (algunos juegos lo usan)
+local function estaMuerto(personaje)
+    if not personaje then return true end
+
+    local humanoide = personaje:FindFirstChildOfClass("Humanoid")
+    if not humanoide then return true end
+
+    if humanoide.Health <= 0 then return true end
+
+    if humanoide:GetState() == Enum.HumanoidStateType.Dead then return true end
+
+    return false
+end
+
+local function obtenerPuntoObjetivo(personaje, forzarCabeza)
+    if forzarCabeza or boneAim == "HEAD" then
+        local cabeza = personaje:FindFirstChild("Head")
+        if cabeza then return cabeza end
+    end
+    return personaje:FindFirstChild("HumanoidRootPart")
+        or personaje:FindFirstChild("UpperTorso")
+        or personaje:FindFirstChild("Torso")
+end
+
+local function hayParedEntre(desde, hasta, ignorarPersonaje)
+    local rayParams = RaycastParams.new()
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    rayParams.IgnoreWater = true
+
+    local filtros = {}
+    if LocalPlayer.Character then
+        table.insert(filtros, LocalPlayer.Character)
+    end
+    if ignorarPersonaje then
+        table.insert(filtros, ignorarPersonaje)
+    end
+    rayParams.FilterDescendantsInstances = filtros
+
+    local direccion = hasta - desde
+    local resultado = workspace:Raycast(desde, direccion, rayParams)
+
+    if not resultado then return false end
+
+    local golpeado = resultado.Instance
+
+    if ignorarPersonaje and golpeado:IsDescendantOf(ignorarPersonaje) then
+        return false
+    end
+
+    if LocalPlayer.Character and golpeado:IsDescendantOf(LocalPlayer.Character) then
+        return false
+    end
+
+    return true
+end
+
+local function obtenerJugadorCercano(forzarCabeza)
+    local cam = workspace.CurrentCamera
+    if not cam then return nil end
+
+    local centroPantalla = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+    local radioFov = fovValue * 6 / 2
+
+    local mejorObjetivo = nil
+    local mejorDistancia = math.huge
+
+    for _, jugador in ipairs(Players:GetPlayers()) do
+        if jugador ~= LocalPlayer then
+            local personaje = jugador.Character
+            if personaje then
+                -- COMPROBACIÓN DE MUERTO MEJORADA
+                local muerto = estaMuerto(personaje)
+                if muerto and not targetDead then
+                    continue
+                end
+
+                local puntoObjetivo = obtenerPuntoObjetivo(personaje, forzarCabeza)
+                if puntoObjetivo then
+                    if wallCheck then
+                        if hayParedEntre(cam.CFrame.Position, puntoObjetivo.Position, personaje) then
+                            continue
+                        end
+                    end
+
+                    local distanciaStuds = (puntoObjetivo.Position - cam.CFrame.Position).Magnitude
+                    local distanciaMetros = distanciaStuds * 0.28
+
+                    if distanciaMetros <= aimDistance then
+                        local screenPoint, onScreen = cam:WorldToViewportPoint(puntoObjetivo.Position)
+                        if onScreen then
+                            local distPantalla = (Vector2.new(screenPoint.X, screenPoint.Y) - centroPantalla).Magnitude
+                            if distPantalla <= radioFov and distPantalla < mejorDistancia then
+                                mejorDistancia = distPantalla
+                                mejorObjetivo = puntoObjetivo
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return mejorObjetivo
+end
+
+-- ============================
+-- CONEXIONES
+-- ============================
+local conexiones = {}
+
+local function addConn(conn)
+    table.insert(conexiones, conn)
+    return conn
+end
+
+-- Aimbot
+addConn(RunService.RenderStepped:Connect(function()
+    if not aimbotEnabled or not aimActive then return end
+
+    local cam = workspace.CurrentCamera
+    if not cam then return end
+
+    local objetivo = obtenerJugadorCercano(false)
+    if objetivo then
+        local factor = 1 - (smoothValue / 100)
+        factor = math.clamp(factor, 0.03, 1)
+
+        local targetCFrame = CFrame.new(cam.CFrame.Position, objetivo.Position)
+        cam.CFrame = cam.CFrame:Lerp(targetCFrame, factor)
+    end
+end))
+
+addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    local nombre = keyName(input.UserInputType)
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        nombre = input.KeyCode.Name
+    end
+    if nombre == toggleKey then aimActive = true end
+end))
+
+addConn(UserInputService.InputEnded:Connect(function(input)
+    local nombre = keyName(input.UserInputType)
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        nombre = input.KeyCode.Name
+    end
+    if nombre == toggleKey then aimActive = false end
+end))
+
+-- Silent Aim (versión intento: mueve la cámara y espera 1 frame)
+addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not silentAimEnabled then return end
+    if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+
+    local cam = workspace.CurrentCamera
+    if not cam then return end
+
+    local objetivo = obtenerJugadorCercano(true)
+    if not objetivo then return end
+
+    local cframeOriginal = cam.CFrame
+    local cframeObjetivo = CFrame.new(cam.CFrame.Position, objetivo.Position)
+    cam.CFrame = cframeObjetivo
+
+    RunService.RenderStepped:Wait()
+    cam.CFrame = cframeOriginal
+end))
+
+-- ============================
+-- ESP: LÓGICA
+-- ============================
+
+-- LIMPIEZA: cuando un jugador respawnea, borrar su highlight viejo
+local function onCharacterAdded(jugador, personaje)
+    -- Borrar highlight del personaje anterior
+    local viejoHL = espFolder:FindFirstChild("WallhackHL_" .. jugador.Name)
+    if viejoHL then viejoHL:Destroy() end
+
+    -- Borrar esqueleto del personaje anterior
+    local viejoSk = espFolder:FindFirstChild("Skeleton_" .. jugador.Name)
+    if viejoSk then viejoSk:Destroy() end
+
+    -- Limpiar la tabla de esqueletos
+    if skeletons[jugador.Character] then
+        skeletons[jugador.Character] = nil
+    end
+end
+
+-- Conectar CharacterAdded para todos los jugadores actuales y futuros
+for _, jugador in ipairs(Players:GetPlayers()) do
+    if jugador ~= LocalPlayer then
+        addConn(jugador.CharacterAdded:Connect(function(personaje)
+            onCharacterAdded(jugador, personaje)
+        end))
+    end
+end
+
+addConn(Players.PlayerAdded:Connect(function(jugador)
+    if jugador ~= LocalPlayer then
+        addConn(jugador.CharacterAdded:Connect(function(personaje)
+            onCharacterAdded(jugador, personaje)
+        end))
+    end
+end))
+
+addConn(RunService.RenderStepped:Connect(function()
+    if wallhackEnabled then
+        for _, jugador in ipairs(Players:GetPlayers()) do
+            if jugador ~= LocalPlayer and jugador.Character then
+                local personaje = jugador.Character
+                local nombre = "WallhackHL_" .. jugador.Name
+                local hlExistente = espFolder:FindFirstChild(nombre)
+
+                -- Si no existe, lo creamos
+                if not hlExistente then
+                    local hl = Instance.new("Highlight")
+                    hl.Name = nombre
+                    hl.Adornee = personaje
+                    hl.FillColor = Color3.fromRGB(30, 144, 255)
+                    hl.FillTransparency = 0.5
+                    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    hl.OutlineTransparency = 0
+                    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    hl.Parent = espFolder
+                else
+                    -- Si existe pero su Adornee no es el personaje actual, lo actualizamos
+                    if hlExistente.Adornee ~= personaje then
+                        hlExistente.Adornee = personaje
+                    end
+                end
+            end
+        end
+    end
+
+    if skeletonEnabled then
+        local cam = workspace.CurrentCamera
+        if not cam then return end
+
+        local conexionesHuesos = {
+            {"Head", "UpperTorso"}, {"UpperTorso", "LowerTorso"},
+            {"LowerTorso", "LeftUpperLeg"}, {"LowerTorso", "RightUpperLeg"},
+            {"LeftUpperLeg", "LeftLowerLeg"}, {"RightUpperLeg", "RightLowerLeg"},
+            {"UpperTorso", "LeftUpperArm"}, {"UpperTorso", "RightUpperArm"},
+            {"LeftUpperArm", "LeftLowerArm"}, {"RightUpperArm", "RightLowerArm"},
+            {"Head", "Torso"}, {"Torso", "Left Leg"}, {"Torso", "Right Leg"},
+            {"Torso", "Left Arm"}, {"Torso", "Right Arm"},
+        }
+
+        for _, jugador in ipairs(Players:GetPlayers()) do
+            if jugador ~= LocalPlayer and jugador.Character then
+                local personaje = jugador.Character
+                local nombre = "Skeleton_" .. jugador.Name
+
+                if not espFolder:FindFirstChild(nombre) then
+                    local carpeta = Instance.new("Folder")
+                    carpeta.Name = nombre
+                    carpeta.Parent = espFolder
+
+                    local lineas = {}
+                    for i = 1, 15 do
+                        local linea = Instance.new("Frame")
+                        linea.Name = "L" .. i
+                        linea.BackgroundColor3 = Colors.Skeleton
+                        linea.BorderSizePixel = 0
+                        linea.AnchorPoint = Vector2.new(0.5, 0.5)
+                        linea.ZIndex = 1
+                        linea.Visible = false
+                        linea.Parent = carpeta
+                        lineas[i] = linea
+                    end
+                    skeletons[personaje] = lineas
+                end
+
+                local lineas = skeletons[personaje]
+                if lineas then
+                    for i, con in ipairs(conexionesHuesos) do
+                        local linea = lineas[i]
+                        if linea then
+                            local a = personaje:FindFirstChild(con[1])
+                            local b = personaje:FindFirstChild(con[2])
+                            if a and b then
+                                local pa, onA = cam:WorldToViewportPoint(a.Position)
+                                local pb, onB = cam:WorldToViewportPoint(b.Position)
+                                if onA and onB then
+                                    local posA = Vector2.new(pa.X, pa.Y)
+                                    local posB = Vector2.new(pb.X, pb.Y)
+                                    local delta = posB - posA
+                                    local dist = delta.Magnitude
+                                    if dist >= 1 then
+                                        local centro = (posA + posB) / 2
+                                        local angulo = math.atan2(delta.Y, delta.X)
+                                        linea.Visible = true
+                                        linea.Size = UDim2.new(0, dist, 0, 2)
+                                        linea.Position = UDim2.new(0, centro.X, 0, centro.Y)
+                                        linea.Rotation = math.deg(angulo)
+                                    else
+                                        linea.Visible = false
+                                    end
+                                else
+                                    linea.Visible = false
+                                end
+                            else
+                                linea.Visible = false
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end))
+
+addConn(Players.PlayerRemoving:Connect(function(jugador)
+    local hl = espFolder:FindFirstChild("WallhackHL_" .. jugador.Name)
+    if hl then hl:Destroy() end
+    local sk = espFolder:FindFirstChild("Skeleton_" .. jugador.Name)
+    if sk then sk:Destroy() end
+end))
+
+-- ============================
+-- LIMPIEZA AL CERRAR
+-- ============================
+addCleanup(function()
+    for _, conn in ipairs(conexiones) do
+        pcall(function() conn:Disconnect() end)
+    end
+    conexiones = {}
+
+    for _, hijo in ipairs(espFolder:GetChildren()) do
+        pcall(function() hijo:Destroy() end)
+    end
+
+    if AutoWindow._fovCircle then
+        AutoWindow._fovCircle.Visible = false
+    end
+
+    aimbotEnabled = false
+    silentAimEnabled = false
+    wallhackEnabled = false
+    skeletonEnabled = false
+    aimActive = false
+    skeletons = {}
+
+    print("[Ryze.xyz] Todo desactivado correctamente ✅")
+end)
+
+return RyzeCodeHub
