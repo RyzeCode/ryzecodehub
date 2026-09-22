@@ -4,11 +4,24 @@
 
 local RyzeCodeHub = {}
 
--- ============================
--- CONFIGURACIÓN GLOBAL
--- ============================
 RyzeCodeHub.Version = "1.0.0"
 RyzeCodeHub.Name = "RyzeCodeHub"
+
+-- ============================
+-- COLORES (AZUL CLARO)
+-- ============================
+local Colors = {
+    Background   = Color3.fromRGB(230, 242, 255),  -- fondo general (azul muy claro)
+    TitleBar     = Color3.fromRGB(100, 170, 255),  -- barra de título (azul claro)
+    TabList      = Color3.fromRGB(210, 230, 255),  -- lista de pestañas
+    TabActive    = Color3.fromRGB(150, 200, 255),  -- pestaña activa
+    TabInactive  = Color3.fromRGB(210, 230, 255),  -- pestaña inactiva
+    Content      = Color3.fromRGB(240, 248, 255),  -- contenido
+    Button       = Color3.fromRGB(170, 210, 255),  -- botones
+    ButtonHover  = Color3.fromRGB(130, 185, 255),  -- botones al pasar el ratón
+    TextDark     = Color3.fromRGB(20, 40, 80),     -- texto oscuro
+    TextLight    = Color3.fromRGB(255, 255, 255),  -- texto claro
+}
 
 -- ============================
 -- CREAR VENTANA
@@ -16,10 +29,8 @@ RyzeCodeHub.Name = "RyzeCodeHub"
 function RyzeCodeHub:CreateWindow(config)
     config = config or {}
     local windowName = config.Name or "RyzeCodeHub"
-    local loadingTitle = config.LoadingTitle or "Cargando..."
-    local loadingSubtitle = config.LoadingSubtitle or "by RyzeCodeHub"
 
-    -- ScreenGui contenedor
+    -- ScreenGui
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "RyzeCodeHub_UI"
     screenGui.ResetOnSpawn = false
@@ -31,46 +42,53 @@ function RyzeCodeHub:CreateWindow(config)
     mainFrame.Name = "MainFrame"
     mainFrame.Size = UDim2.new(0, 600, 0, 400)
     mainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    mainFrame.BackgroundColor3 = Colors.Background
     mainFrame.BorderSizePixel = 0
+    mainFrame.Active = true
+    mainFrame.Draggable = true          -- 👈 ESTO permite arrastrar la ventana
     mainFrame.Parent = screenGui
 
-    -- Esquinas redondeadas
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = mainFrame
 
-    -- Título de la ventana
-    local title = Instance.new("TextLabel")
-    title.Name = "Title"
-    title.Size = UDim2.new(1, 0, 0, 40)
-    title.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    title.BorderSizePixel = 0
-    title.Text = windowName
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextSize = 18
-    title.Font = Enum.Font.GothamBold
-    title.Parent = mainFrame
+    -- Barra de título
+    local titleBar = Instance.new("Frame")
+    titleBar.Name = "TitleBar"
+    titleBar.Size = UDim2.new(1, 0, 0, 40)
+    titleBar.BackgroundColor3 = Colors.TitleBar
+    titleBar.BorderSizePixel = 0
+    titleBar.Parent = mainFrame
 
     local titleCorner = Instance.new("UICorner")
     titleCorner.CornerRadius = UDim.new(0, 8)
-    titleCorner.Parent = title
+    titleCorner.Parent = titleBar
 
-    -- Contenedor de pestañas (lateral izquierdo)
+    local title = Instance.new("TextLabel")
+    title.Name = "Title"
+    title.Size = UDim2.new(1, 0, 1, 0)
+    title.BackgroundTransparency = 1
+    title.Text = windowName
+    title.TextColor3 = Colors.TextLight
+    title.TextSize = 18
+    title.Font = Enum.Font.GothamBold
+    title.Parent = titleBar
+
+    -- Lista de pestañas (izquierda)
     local tabList = Instance.new("Frame")
     tabList.Name = "TabList"
     tabList.Size = UDim2.new(0, 150, 1, -40)
     tabList.Position = UDim2.new(0, 0, 0, 40)
-    tabList.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+    tabList.BackgroundColor3 = Colors.TabList
     tabList.BorderSizePixel = 0
     tabList.Parent = mainFrame
 
-    -- Contenedor de contenido (lateral derecho)
+    -- Contenido (derecha)
     local contentFrame = Instance.new("Frame")
     contentFrame.Name = "ContentFrame"
     contentFrame.Size = UDim2.new(1, -150, 1, -40)
     contentFrame.Position = UDim2.new(0, 150, 0, 40)
-    contentFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    contentFrame.BackgroundColor3 = Colors.Content
     contentFrame.BorderSizePixel = 0
     contentFrame.Parent = mainFrame
 
@@ -78,28 +96,23 @@ function RyzeCodeHub:CreateWindow(config)
     -- OBJETO WINDOW
     -- ============================
     local Window = {}
-
-    -- Lista de pestañas
     local tabs = {}
-    local currentTab = nil
 
     function Window:CreateTab(tabName, icon)
         tabName = tabName or "Tab"
 
-        -- Botón de la pestaña
         local tabButton = Instance.new("TextButton")
         tabButton.Name = "Tab_" .. tabName
         tabButton.Size = UDim2.new(1, 0, 0, 35)
         tabButton.Position = UDim2.new(0, 0, 0, #tabs * 35)
-        tabButton.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+        tabButton.BackgroundColor3 = Colors.TabInactive
         tabButton.BorderSizePixel = 0
         tabButton.Text = tabName
-        tabButton.TextColor3 = Color3.fromRGB(200, 200, 210)
+        tabButton.TextColor3 = Colors.TextDark
         tabButton.TextSize = 14
         tabButton.Font = Enum.Font.Gotham
         tabButton.Parent = tabList
 
-        -- Contenedor de contenido de esta pestaña
         local tabContent = Instance.new("ScrollingFrame")
         tabContent.Name = "Content_" .. tabName
         tabContent.Size = UDim2.new(1, 0, 1, 0)
@@ -110,7 +123,6 @@ function RyzeCodeHub:CreateWindow(config)
         tabContent.Visible = false
         tabContent.Parent = contentFrame
 
-        -- Layout para los elementos
         local layout = Instance.new("UIListLayout")
         layout.Padding = UDim.new(0, 6)
         layout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -122,15 +134,12 @@ function RyzeCodeHub:CreateWindow(config)
         padding.PaddingRight = UDim.new(0, 8)
         padding.Parent = tabContent
 
-        -- Actualizar tamaño del canvas automáticamente
         layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             tabContent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
         end)
 
-        -- Objeto Tab
         local Tab = {}
 
-        -- Botón
         function Tab:CreateButton(buttonConfig)
             buttonConfig = buttonConfig or {}
             local buttonName = buttonConfig.Name or "Button"
@@ -139,10 +148,10 @@ function RyzeCodeHub:CreateWindow(config)
             local button = Instance.new("TextButton")
             button.Name = "Button_" .. buttonName
             button.Size = UDim2.new(1, -16, 0, 32)
-            button.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+            button.BackgroundColor3 = Colors.Button
             button.BorderSizePixel = 0
             button.Text = buttonName
-            button.TextColor3 = Color3.fromRGB(255, 255, 255)
+            button.TextColor3 = Colors.TextDark
             button.TextSize = 14
             button.Font = Enum.Font.Gotham
             button.Parent = tabContent
@@ -151,6 +160,12 @@ function RyzeCodeHub:CreateWindow(config)
             btnCorner.CornerRadius = UDim.new(0, 6)
             btnCorner.Parent = button
 
+            button.MouseEnter:Connect(function()
+                button.BackgroundColor3 = Colors.ButtonHover
+            end)
+            button.MouseLeave:Connect(function()
+                button.BackgroundColor3 = Colors.Button
+            end)
             button.MouseButton1Click:Connect(function()
                 pcall(callback)
             end)
@@ -158,7 +173,6 @@ function RyzeCodeHub:CreateWindow(config)
             return button
         end
 
-        -- Toggle
         function Tab:CreateToggle(toggleConfig)
             toggleConfig = toggleConfig or {}
             local toggleName = toggleConfig.Name or "Toggle"
@@ -168,10 +182,10 @@ function RyzeCodeHub:CreateWindow(config)
             local toggle = Instance.new("TextButton")
             toggle.Name = "Toggle_" .. toggleName
             toggle.Size = UDim2.new(1, -16, 0, 32)
-            toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+            toggle.BackgroundColor3 = Colors.Button
             toggle.BorderSizePixel = 0
             toggle.Text = toggleName
-            toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+            toggle.TextColor3 = Colors.TextDark
             toggle.TextSize = 14
             toggle.Font = Enum.Font.Gotham
             toggle.TextXAlignment = Enum.TextXAlignment.Left
@@ -185,12 +199,10 @@ function RyzeCodeHub:CreateWindow(config)
             paddingText.PaddingLeft = UDim.new(0, 10)
             paddingText.Parent = toggle
 
-            -- Indicador on/off
             local indicator = Instance.new("Frame")
-            indicator.Name = "Indicator"
             indicator.Size = UDim2.new(0, 40, 0, 20)
             indicator.Position = UDim2.new(1, -50, 0.5, -10)
-            indicator.BackgroundColor3 = currentValue and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(60, 60, 70)
+            indicator.BackgroundColor3 = currentValue and Colors.TitleBar or Color3.fromRGB(180, 180, 190)
             indicator.BorderSizePixel = 0
             indicator.Parent = toggle
 
@@ -199,7 +211,6 @@ function RyzeCodeHub:CreateWindow(config)
             indCorner.Parent = indicator
 
             local circle = Instance.new("Frame")
-            circle.Name = "Circle"
             circle.Size = UDim2.new(0, 16, 0, 16)
             circle.Position = currentValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
             circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -212,7 +223,7 @@ function RyzeCodeHub:CreateWindow(config)
 
             toggle.MouseButton1Click:Connect(function()
                 currentValue = not currentValue
-                indicator.BackgroundColor3 = currentValue and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(60, 60, 70)
+                indicator.BackgroundColor3 = currentValue and Colors.TitleBar or Color3.fromRGB(180, 180, 190)
                 circle.Position = currentValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
                 pcall(callback, currentValue)
             end)
@@ -220,32 +231,28 @@ function RyzeCodeHub:CreateWindow(config)
             return toggle
         end
 
-        -- Guardamos la pestaña
         tabs[#tabs + 1] = { Button = tabButton, Content = tabContent }
 
-        -- Al hacer clic en la pestaña, mostrarla
         tabButton.MouseButton1Click:Connect(function()
-            for _, tab in ipairs(tabs) do
-                tab.Content.Visible = false
-                tab.Button.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-                tab.Button.TextColor3 = Color3.fromRGB(200, 200, 210)
+            for _, t in ipairs(tabs) do
+                t.Content.Visible = false
+                t.Button.BackgroundColor3 = Colors.TabInactive
+                t.Button.TextColor3 = Colors.TextDark
             end
             tabContent.Visible = true
-            tabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 58)
-            tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            tabButton.BackgroundColor3 = Colors.TabActive
+            tabButton.TextColor3 = Colors.TextDark
         end)
 
-        -- Si es la primera pestaña, la mostramos automáticamente
         if #tabs == 1 then
             tabContent.Visible = true
-            tabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 58)
-            tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            tabButton.BackgroundColor3 = Colors.TabActive
+            tabButton.TextColor3 = Colors.TextDark
         end
 
         return Tab
     end
 
-    -- Destruir la ventana
     function Window:Destroy()
         screenGui:Destroy()
     end
