@@ -13,11 +13,10 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================
--- IDs DE IMÁGENES (rellena esto)
+-- IDs DE IMÁGENES
 -- ============================
--- 1. Sube las imágenes a Roblox y pon los IDs aquí (solo el número, sin rbxassetid://)
-local ID_LOGO_R = 0          -- <- Pon aquí el ID de la imagen de la R metálica
-local ID_FONDO_TITLEBAR = 0  -- <- Pon aquí el ID de la imagen del fondo gris metálico
+local ID_LOGO_R = 7077827551269          -- R metálica
+local ID_FONDO_TITLEBAR = 119390880642926 -- Fondo gris metálico
 
 -- ============================
 -- COLORES
@@ -108,7 +107,7 @@ function RyzeCodeHub:CreateWindow(config)
     titleBar.ZIndex = 6
     titleBar.Parent = mainFrame
 
-    -- Imagen del fondo de la barra de título (si hay ID)
+    -- Fondo de la barra de título (imagen gris metálica estirada)
     if ID_FONDO_TITLEBAR and ID_FONDO_TITLEBAR ~= 0 then
         local fondoImagen = Instance.new("ImageLabel")
         fondoImagen.Name = "FondoTitulo"
@@ -118,11 +117,6 @@ function RyzeCodeHub:CreateWindow(config)
         fondoImagen.ScaleType = Enum.ScaleType.Stretch
         fondoImagen.ZIndex = 6
         fondoImagen.Parent = titleBar
-
-        -- Aseguramos que la imagen esté recortada por las esquinas redondeadas
-        local imageCorner = Instance.new("UICorner")
-        imageCorner.CornerRadius = UDim.new(0, 8)
-        imageCorner.Parent = fondoImagen
     end
 
     local titleCorner = Instance.new("UICorner")
@@ -198,9 +192,7 @@ function RyzeCodeHub:CreateWindow(config)
     contentFrame.ZIndex = 6
     contentFrame.Parent = mainFrame
 
-    -- ============================
-    -- BURBUJA MINIMIZADA (con logo R)
-    -- ============================
+    -- Burbuja minimizada (con logo R)
     local bubble = Instance.new("TextButton")
     bubble.Name = "Bubble"
     bubble.Size = UDim2.new(0, 60, 0, 60)
@@ -208,7 +200,7 @@ function RyzeCodeHub:CreateWindow(config)
     bubble.AnchorPoint = Vector2.new(0, 0)
     bubble.BackgroundColor3 = Colors.Bubble
     bubble.BorderSizePixel = 0
-    bubble.Text = ""  -- Vacío, porque si no hay ID mostramos la R
+    bubble.Text = ""
     bubble.TextColor3 = Colors.TextLight
     bubble.TextSize = 32
     bubble.Font = Enum.Font.GothamBold
@@ -216,7 +208,6 @@ function RyzeCodeHub:CreateWindow(config)
     bubble.Active = true
     bubble.Parent = screenGui
 
-    -- Si hay ID del logo, mostramos la imagen
     if ID_LOGO_R and ID_LOGO_R ~= 0 then
         local logoImg = Instance.new("ImageLabel")
         logoImg.Name = "LogoR"
@@ -227,10 +218,8 @@ function RyzeCodeHub:CreateWindow(config)
         logoImg.ZIndex = 2
         logoImg.Parent = bubble
 
-        -- La burbuja se vuelve transparente para que solo se vea el logo
         bubble.BackgroundTransparency = 1
     else
-        -- Si no hay ID, mostramos la "R" en texto
         bubble.Text = "R"
     end
 
@@ -241,7 +230,6 @@ function RyzeCodeHub:CreateWindow(config)
     local bubbleBorder = Instance.new("UIStroke")
     bubbleBorder.Color = Colors.Border
     bubbleBorder.Thickness = 2
-    -- Si no hay ID, mostramos borde. Si hay ID, lo ocultamos
     if ID_LOGO_R and ID_LOGO_R ~= 0 then
         bubbleBorder.Transparency = 1
     end
@@ -252,9 +240,7 @@ function RyzeCodeHub:CreateWindow(config)
     local bubbleStartMouse = nil
 
     bubble.MouseEnter:Connect(function()
-        if ID_LOGO_R and ID_LOGO_R ~= 0 then
-            -- Si hay imagen, no cambiamos el fondo (está transparente)
-        else
+        if not (ID_LOGO_R and ID_LOGO_R ~= 0) then
             bubble.BackgroundColor3 = Colors.BubbleHover
         end
     end)
@@ -764,7 +750,9 @@ function RyzeCodeHub:CreateWindow(config)
             button.Font = Enum.Font.Gotham
             button.ZIndex = 8
             button.LayoutOrder = order
-            button.Parent = tabContent            local btnCorner = Instance.new("UICorner")
+            button.Parent = tabContent
+
+            local btnCorner = Instance.new("UICorner")
             btnCorner.CornerRadius = UDim.new(0, 6)
             btnCorner.Parent = button
 
@@ -1353,7 +1341,7 @@ addConn(RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- SHOW HEALTH (barra VERTICAL proporcional a la distancia)
+    -- SHOW HEALTH
     if showHealthEnabled then
         local cam = workspace.CurrentCamera
         if not cam then return end
@@ -1370,7 +1358,6 @@ addConn(RunService.RenderStepped:Connect(function()
                     local nombreBarra = "HealthBar_" .. jugador.Name
                     local contenedor = healthBars[jugador]
 
-                    -- Crear contenedor la primera vez
                     if not contenedor then
                         contenedor = Instance.new("Frame")
                         contenedor.Name = nombreBarra
@@ -1380,7 +1367,6 @@ addConn(RunService.RenderStepped:Connect(function()
                         contenedor.Parent = espFrame
                         healthBars[jugador] = contenedor
 
-                        -- Texto del porcentaje
                         local texto = Instance.new("TextLabel")
                         texto.Name = "Porcentaje"
                         texto.BackgroundTransparency = 1
@@ -1393,7 +1379,6 @@ addConn(RunService.RenderStepped:Connect(function()
                         texto.ZIndex = 4
                         texto.Parent = contenedor
 
-                        -- Fondo de la barra (gris, vertical)
                         local fondo = Instance.new("Frame")
                         fondo.Name = "Fondo"
                         fondo.BackgroundColor3 = Colors.HealthBg
@@ -1405,7 +1390,6 @@ addConn(RunService.RenderStepped:Connect(function()
                         fondoCorner.CornerRadius = UDim.new(1, 0)
                         fondoCorner.Parent = fondo
 
-                        -- Relleno (verde, sube desde abajo)
                         local relleno = Instance.new("Frame")
                         relleno.Name = "Relleno"
                         relleno.AnchorPoint = Vector2.new(0, 1)
@@ -1420,7 +1404,6 @@ addConn(RunService.RenderStepped:Connect(function()
                         rellenoCorner.Parent = relleno
                     end
 
-                    -- Proyección de la cabeza y los pies a pantalla
                     local cabeza = personaje:FindFirstChild("Head") or hrp
                     local posCabeza, enCabeza = cam:WorldToViewportPoint(cabeza.Position)
                     local posPies, enPies = cam:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
@@ -1428,21 +1411,16 @@ addConn(RunService.RenderStepped:Connect(function()
                     if enCabeza and posCabeza.Z > 0 and enPies and posPies.Z > 0 then
                         contenedor.Visible = true
 
-                        -- Altura visual del personaje en pantalla (distancia entre pies y cabeza)
                         local alturaPersonaje = math.abs(posPies.Y - posCabeza.Y)
                         alturaPersonaje = math.clamp(alturaPersonaje, 20, 300)
 
-                        -- La barra es proporcional a la altura del personaje
                         local alturaBarra = alturaPersonaje * 0.7
                         local anchoBarra = math.clamp(alturaPersonaje * 0.06, 3, 8)
                         local tamanoTexto = math.clamp(alturaPersonaje * 0.2, 8, 16)
 
-                        -- Posicionamos la barra al lado del torso
-                        -- SEPARACIÓN: +14 en lugar de +5 para que no esté tan pegada
                         contenedor.Size = UDim2.new(0, anchoBarra, 0, alturaBarra)
                         contenedor.Position = UDim2.new(0, posCabeza.X + anchoBarra + 14, 0, posCabeza.Y)
 
-                        -- Actualizamos el texto
                         local texto = contenedor:FindFirstChild("Porcentaje")
                         if texto then
                             texto.Size = UDim2.new(0, 40, 0, tamanoTexto)
@@ -1450,7 +1428,6 @@ addConn(RunService.RenderStepped:Connect(function()
                             texto.Position = UDim2.new(0, -20 + anchoBarra / 2, 0, -tamanoTexto - 3)
                         end
 
-                        -- Actualizamos la barra
                         local fondo = contenedor:FindFirstChild("Fondo")
                         local relleno = fondo and fondo:FindFirstChild("Relleno")
 
