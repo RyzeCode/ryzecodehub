@@ -25,7 +25,7 @@ local Colors = {
     MinimizeHover= Color3.fromRGB(255, 170, 40),
     Close        = Color3.fromRGB(255, 90, 90),
     CloseHover   = Color3.fromRGB(255, 50, 50),
-    Bubble       = Color3.fromRGB(100, 170, 255),  -- azul de la bola
+    Bubble       = Color3.fromRGB(100, 170, 255),
     BubbleHover  = Color3.fromRGB(70, 140, 255),
 }
 
@@ -42,9 +42,7 @@ function RyzeCodeHub:CreateWindow(config)
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.Parent = game.CoreGui
 
-    -- ============================
-    -- VENTANA PRINCIPAL
-    -- ============================
+    -- Ventana principal
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
     mainFrame.Size = UDim2.new(0, 600, 0, 400)
@@ -134,9 +132,7 @@ function RyzeCodeHub:CreateWindow(config)
     contentFrame.BorderSizePixel = 0
     contentFrame.Parent = mainFrame
 
-    -- ============================
-    -- BOLA FLOTANTE (oculta al principio)
-    -- ============================
+    -- Bola flotante
     local bubble = Instance.new("TextButton")
     bubble.Name = "Bubble"
     bubble.Size = UDim2.new(0, 60, 0, 60)
@@ -149,30 +145,25 @@ function RyzeCodeHub:CreateWindow(config)
     bubble.Font = Enum.Font.GothamBold
     bubble.Visible = false
     bubble.Active = true
-    bubble.Draggable = true        -- 👈 también se puede arrastrar
+    bubble.Draggable = true
     bubble.Parent = screenGui
 
     local bubbleCorner = Instance.new("UICorner")
     bubbleCorner.CornerRadius = UDim.new(1, 0)
     bubbleCorner.Parent = bubble
 
-    -- Hover de la bola
     bubble.MouseEnter:Connect(function()
         bubble.BackgroundColor3 = Colors.BubbleHover
     end)
     bubble.MouseLeave:Connect(function()
         bubble.BackgroundColor3 = Colors.Bubble
     end)
-
-    -- Al pulsar la bola, se vuelve a abrir el menú
     bubble.MouseButton1Click:Connect(function()
         bubble.Visible = false
         mainFrame.Visible = true
     end)
 
-    -- ============================
-    -- LÓGICA MINIMIZAR / CERRAR
-    -- ============================
+    -- Minimizar
     minimizeBtn.MouseEnter:Connect(function()
         minimizeBtn.BackgroundColor3 = Colors.MinimizeHover
     end)
@@ -184,6 +175,7 @@ function RyzeCodeHub:CreateWindow(config)
         bubble.Visible = true
     end)
 
+    -- Cerrar
     closeBtn.MouseEnter:Connect(function()
         closeBtn.BackgroundColor3 = Colors.CloseHover
     end)
@@ -194,9 +186,7 @@ function RyzeCodeHub:CreateWindow(config)
         screenGui:Destroy()
     end)
 
-    -- ============================
-    -- OBJETO WINDOW
-    -- ============================
+    -- Objeto Window
     local Window = {}
     local tabs = {}
 
@@ -361,5 +351,26 @@ function RyzeCodeHub:CreateWindow(config)
 
     return Window
 end
+
+-- ============================
+-- AUTO-SETUP (para que se abra con 1 línea)
+-- ============================
+local AutoWindow = RyzeCodeHub:CreateWindow({ Name = "RyzeCodeHub" })
+local AutoTab = AutoWindow:CreateTab("Troll Scripts")
+
+AutoTab:CreateButton({
+    Name = "Ejemplo",
+    Callback = function()
+        print("[RyzeCodeHub] Botón pulsado ✅")
+    end
+})
+
+AutoTab:CreateToggle({
+    Name = "Ejemplo Toggle",
+    CurrentValue = false,
+    Callback = function(v)
+        print("[RyzeCodeHub] Toggle:", v)
+    end
+})
 
 return RyzeCodeHub
