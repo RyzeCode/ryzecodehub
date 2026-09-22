@@ -15,10 +15,8 @@ local LocalPlayer = Players.LocalPlayer
 -- ============================
 -- LISTA MANUAL DE ALIADOS (TEAM CHECK)
 -- ============================
--- Escribe aquí los nombres EXACTOS de tus compañeros de equipo.
 local aliados = {
     -- ["NombreDeTuAmigo1"] = true,
-    -- ["NombreDeTuAmigo2"] = true,
 }
 
 -- ============================
@@ -830,6 +828,7 @@ local wallhackEnabled = false
 local skeletonEnabled = false
 local showHealthEnabled = false
 local teamCheckEnabled = false
+local teamCheckMode = "AUTO"
 local skeletons = {}
 local healthBars = {}
 
@@ -1037,11 +1036,6 @@ MiscTab:CreateKeybind({
 })
 
 -- ============================
--- ESTADO TEAM CHECK
--- ============================
-local teamCheckMode = "AUTO"  -- AUTO, TEAM, TEAMCOLOR, BODYCOLOR, MANUAL
-
--- ============================
 -- LÓGICA
 -- ============================
 local function estaMuerto(personaje)
@@ -1055,47 +1049,32 @@ local function estaMuerto(personaje)
     return false
 end
 
--- ============================
--- 4 MÉTODOS DE TEAM CHECK
--- ============================
-
--- Método 1: Lista manual
 local function checkManual(jugador)
     return aliados[jugador.Name] == true
 end
 
--- Método 2: Player.Team
 local function checkTeam(jugador)
     if not LocalPlayer.Team or not jugador.Team then return false end
     return jugador.Team == LocalPlayer.Team
 end
 
--- Método 3: Player.TeamColor
 local function checkTeamColor(jugador)
     if not LocalPlayer.TeamColor or not jugador.TeamColor then return false end
     return jugador.TeamColor == LocalPlayer.TeamColor
 end
 
--- Método 4: Color del cuerpo del personaje (BodyColors)
 local function checkBodyColor(jugador)
     if jugador == LocalPlayer then return true end
     if not jugador.Character or not LocalPlayer.Character then return false end
-
     local bcLocal = LocalPlayer.Character:FindFirstChildOfClass("BodyColors")
     local bcOtro = jugador.Character:FindFirstChildOfClass("BodyColors")
     if not bcLocal or not bcOtro then return false end
-
-    -- Comparamos el color del torso (Head, Torso, etc.)
     return bcLocal.TorsoColor3 == bcOtro.TorsoColor3
         and bcLocal.HeadColor3 == bcOtro.HeadColor3
 end
 
--- Función principal que usa el modo seleccionado
 local function esDelMismoEquipo(jugador)
-    -- Siempre comprobamos manual primero (funciona en cualquier juego)
     if checkManual(jugador) then return true end
-
-    -- Depende del modo seleccionado
     if teamCheckMode == "MANUAL" then
         return false
     elseif teamCheckMode == "TEAM" then
@@ -1104,7 +1083,7 @@ local function esDelMismoEquipo(jugador)
         return checkTeamColor(jugador)
     elseif teamCheckMode == "BODYCOLOR" then
         return checkBodyColor(jugador)
-    else -- AUTO: prueba todos
+    else
         if checkTeam(jugador) then return true end
         if checkTeamColor(jugador) then return true end
         if checkBodyColor(jugador) then return true end
@@ -1178,24 +1157,85 @@ local function obtenerJugadorCercano(forzarCabeza, ignorarParedes)
     return mejorObjetivo
 end
 
+-- ============================
+-- AIMBOT MEJORADO (con memoria de objetivo)
+-- ============================
+-- Guardamos el último objetivo conocido y su posición.
+-- Si un frame no encontramos objetivo, seguimos apuntando al último durante X frames.
+local ultimoObjetivo = nil
+local ultimoObjetivoPos = nil
+local ultimoObjetivoContador = 0
+local MAX_FRAMES_SIN_OBJETIVO = 15
+
 local conexiones = {}
 local function addConn(conn)
     table.insert(conexiones, conn)
     return conn
 end
 
--- Aimbot
 addConn(RunService.RenderStepped:Connect(function()
-    if not aimbotEnabled or not aimActive then return end
+    if not aimbotEnabled or not aimActive then
+        ultimoObjetivo = nil
+        ultimoObjetivoPos = nil
+        ultimoObjetivoContador = 0
+        return
+    end
+
     local cam = workspace.CurrentCamera
     if not cam then return end
+
     local objetivo = obtenerJugadorCercano(false, magicBulletEnabled)
+
     if objetivo then
-        local factor = 1 - (smoothValue / 100)
-        factor = math.clamp(factor, 0.03, 1)
-        local targetCFrame = CFrame.new(cam.CFrame.Position, objetivo.Position)
-        cam.CFrame = cam.CFrame:Lerp(targetCFrame, factor)
+        -- Encontramos objetivo, actualizamos
+        ultimoObjetivo = objetivo
+        ultimoObjetivoPos = objetivo.Position
+        ultimoObjetivoContador = 0
+    else
+        -- No encontramos objetivo, usamos el último durante X frames
+        if ultimoObjetivo and ultimoObjetivo.Parent then
+            ultimoObjetivoContador = ultimoObjetivoContador + 1
+            if ultimoObjetivoContador <= MAX_FRAMES_SIN_OBJETIVO then
+                objetivo = ultimoObjetivo
+            else
+                ultimoObjetivo = nil
+                ultimoObjetivoPos = nil
+                ultimoObjetivoContador = 0
+                return
+            end
+        else
+            return
+        end
     end
+
+    -- Calculamos el punto objetivo actual
+    local targetPos
+    if objetivo.Parent then
+        targetPos = objetivo.Position
+    elseif ultimoObjetivoPos then
+        targetPos = ultimoObjetivoPos
+    else
+        return
+    end
+
+    -- Origen del aimbot: usamos el HumanoidRootPart en lugar de la cámara
+    -- Esto hace que el aimbot no dependa del movimiento de la cámara (Fly)
+    local origen
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        origen = hrp.Position
+    else
+        origen = cam.CFrame.Position
+    end
+
+    local factor = 1 - (smoothValue / 100)
+    factor = math.clamp(factor, 0.03, 1)
+
+    -- Calculamos la nueva CFrame basada en el origen, no en la posición de la cámara
+    local direccion = (targetPos - origen).Unit
+    local targetCFrame = CFrame.lookAt(cam.CFrame.Position, cam.CFrame.Position + direccion)
+
+    cam.CFrame = cam.CFrame:Lerp(targetCFrame, factor)
 end))
 
 addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -1243,7 +1283,6 @@ end))
 
 -- ESP
 addConn(RunService.RenderStepped:Connect(function()
-    -- WALLHACK (solo Highlight, sin box)
     if wallhackEnabled then
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
@@ -1252,11 +1291,9 @@ addConn(RunService.RenderStepped:Connect(function()
                     if hlViejo then hlViejo:Destroy() end
                     continue
                 end
-
                 local personaje = jugador.Character
                 local hlNombre = "WallhackHL_" .. jugador.Name
                 local hlExistente = espFrame:FindFirstChild(hlNombre)
-
                 if not hlExistente then
                     local hl = Instance.new("Highlight")
                     hl.Name = hlNombre
@@ -1276,11 +1313,9 @@ addConn(RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- SKELETON
     if skeletonEnabled then
         local cam = workspace.CurrentCamera
         if not cam then return end
-
         local conexionesHuesos = {
             {"Head", "UpperTorso"}, {"UpperTorso", "LowerTorso"},
             {"LowerTorso", "LeftUpperLeg"}, {"LowerTorso", "RightUpperLeg"},
@@ -1290,7 +1325,6 @@ addConn(RunService.RenderStepped:Connect(function()
             {"Head", "Torso"}, {"Torso", "Left Leg"}, {"Torso", "Right Leg"},
             {"Torso", "Left Arm"}, {"Torso", "Right Arm"},
         }
-
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
                 if teamCheckEnabled and esDelMismoEquipo(jugador) then
@@ -1357,7 +1391,6 @@ addConn(RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- SHOW HEALTH
     if showHealthEnabled then
         local cam = workspace.CurrentCamera
         if not cam then return end
@@ -1385,7 +1418,6 @@ addConn(RunService.RenderStepped:Connect(function()
                         contenedor.ZIndex = 2
                         contenedor.Parent = espFrame
                         healthBars[jugador] = contenedor
-
                         local texto = Instance.new("TextLabel")
                         texto.Name = "Porcentaje"
                         texto.BackgroundTransparency = 1
@@ -1397,7 +1429,6 @@ addConn(RunService.RenderStepped:Connect(function()
                         texto.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
                         texto.ZIndex = 4
                         texto.Parent = contenedor
-
                         local fondo = Instance.new("Frame")
                         fondo.Name = "Fondo"
                         fondo.BackgroundColor3 = Colors.HealthBg
@@ -1407,7 +1438,6 @@ addConn(RunService.RenderStepped:Connect(function()
                         local fondoCorner = Instance.new("UICorner")
                         fondoCorner.CornerRadius = UDim.new(1, 0)
                         fondoCorner.Parent = fondo
-
                         local relleno = Instance.new("Frame")
                         relleno.Name = "Relleno"
                         relleno.AnchorPoint = Vector2.new(0, 1)
@@ -1420,7 +1450,6 @@ addConn(RunService.RenderStepped:Connect(function()
                         rellenoCorner.CornerRadius = UDim.new(1, 0)
                         rellenoCorner.Parent = relleno
                     end
-
                     local cabeza = personaje:FindFirstChild("Head") or hrp
                     local posCabeza, enCabeza = cam:WorldToViewportPoint(cabeza.Position)
                     local posPies, enPies = cam:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
@@ -1625,6 +1654,9 @@ addCleanup(function()
     noclipEnabled = false
     noclipActive = false
     aimActive = false
+    ultimoObjetivo = nil
+    ultimoObjetivoPos = nil
+    ultimoObjetivoContador = 0
     skeletons = {}
     healthBars = {}
     print("[Ryze.xyz] Todo desactivado correctamente ✅")
