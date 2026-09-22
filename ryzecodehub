@@ -783,6 +783,7 @@ local AutoWindow = RyzeCodeHub:CreateWindow({ Name = "Ryze.xyz" })
 local AimTab = AutoWindow:CreateTab("AIM")
 local SilentTab = AutoWindow:CreateTab("SILENT")
 local EspTab = AutoWindow:CreateTab("ESP")
+local MiscTab = AutoWindow:CreateTab("MISC")
 
 local addCleanup = AutoWindow._addCleanup
 
@@ -805,6 +806,9 @@ local espFolder = AutoWindow._espFolder
 local wallhackEnabled = false
 local skeletonEnabled = false
 local skeletons = {}
+
+-- Estado MISC
+local instantReloadEnabled = false
 
 -- ============================
 -- AIM: CONTROLES
@@ -940,18 +944,39 @@ EspTab:CreateToggle({
 })
 
 -- ============================
+-- MISC: CONTROLES
+-- ============================
+MiscTab:CreateToggle({
+    Name = "INSTANT RELOAD",
+    CurrentValue = false,
+    Callback = function(valor)
+        instantReloadEnabled = valor
+    end
+})
+
+-- ============================
 -- FUNCIONES DE LÓGICA
 -- ============================
 
--- Comprobación de muerto mejorada (3 comprobaciones)
+-- TARGET DEAD: comprobación mejorada
 local function estaMuerto(personaje)
     if not personaje then return true end
+    if not personaje.Parent then return true end
 
     local humanoide = personaje:FindFirstChildOfClass("Humanoid")
     if not humanoide then return true end
 
     if humanoide.Health <= 0 then return true end
-    if humanoide:GetState() == Enum.HumanoidStateType.Dead then return true end
+
+    local estado = humanoide:GetState()
+    if estado == Enum.HumanoidStateType.Dead then return true end
+    if estado == Enum.HumanoidStateType.None then return true end
+
+    -- Algunos juegos usan un BoolValue "Dead" o "IsDead"
+    local flagDead = personaje:FindFirstChild("Dead") or personaje:FindFirstChild("IsDead")
+    if flagDead and flagDead:IsA("BoolValue") and flagDead.Value then
+        return true
+    end
 
     return false
 end
@@ -1011,8 +1036,8 @@ local function obtenerJugadorCercano(forzarCabeza)
     for _, jugador in ipairs(Players:GetPlayers()) do
         if jugador ~= LocalPlayer then
             local personaje = jugador.Character
-            if personaje then
-                -- TARGET DEAD: usa la función estaMuerto
+            if personaje and personaje.Parent then
+                -- TARGET DEAD: si está muerto y no queremos apuntar a muertos, saltamos
                 if estaMuerto(personaje) and not targetDead then
                     continue
                 end
@@ -1108,21 +1133,21 @@ addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     cam.CFrame = cframeOriginal
 end))
 
--- ============================
 -- ESP: WALLHACK + SKELETON
--- ============================
 addConn(RunService.RenderStepped:Connect(function()
-    -- WALLHACK (con Adornee actualizado cada frame)
+    -- WALLHACK (con SelectionBox + Highlight)
     if wallhackEnabled then
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
                 local personaje = jugador.Character
-                local nombre = "WallhackHL_" .. jugador.Name
-                local hlExistente = espFolder:FindFirstChild(nombre)
+
+                -- Highlight (relleno semitransparente)
+                local hlNombre = "WallhackHL_" .. jugador.Name
+                local hlExistente = espFolder:FindFirstChild(hlNombre)
 
                 if not hlExistente then
                     local hl = Instance.new("Highlight")
-                    hl.Name = nombre
+                    hl.Name = hlNombre
                     hl.Adornee = personaje
                     hl.FillColor = Color3.fromRGB(30, 144, 255)
                     hl.FillTransparency = 0.5
@@ -1131,9 +1156,27 @@ addConn(RunService.RenderStepped:Connect(function()
                     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                     hl.Parent = espFolder
                 else
-                    -- Si apunta a un personaje viejo, actualizarlo
                     if hlExistente.Adornee ~= personaje then
                         hlExistente.Adornee = personaje
+                    end
+                end
+
+                -- SelectionBox (caja que se pega al cuerpo, más fiable)
+                local sbNombre = "WallhackSB_" .. jugador.Name
+                local sbExistente = espFolder:FindFirstChild(sbNombre)
+
+                if not sbExistente then
+                    local sb = Instance.new("SelectionBox")
+                    sb.Name = sbNombre
+                    sb.Adornee = personaje
+                    sb.Color3 = Color3.fromRGB(30, 144, 255)
+                    sb.LineThickness = 0.05
+                    sb.Transparency = 0.5
+                    sb.SurfaceTransparency = 1
+                    sb.Parent = espFolder
+                else
+                    if sbExistente.Adornee ~= personaje then
+                        sbExistente.Adornee = personaje
                     end
                 end
             end
@@ -1219,9 +1262,54 @@ addConn(RunService.RenderStepped:Connect(function()
     end
 end))
 
+-- ============================
+-- INSTANT RELOAD
+-- ============================
+addConn(RunService.RenderStepped:Connect(function()
+    if not instantReloadEnabled then return end
+
+    local personaje = LocalPlayer.Character
+    if not personaje then return end
+
+    -- Buscamos herramientas equipadas
+    for _, hijo in ipairs(personaje:GetChildren()) do
+        if hijo:IsA("Tool") then
+            -- 1. Rellenar valores de munición
+            for _, valor in ipairs(hijo:GetDescendants()) do
+                if valor:IsA("IntValue") or valor:IsA("NumberValue") then
+                    local nombreLower = string.lower(valor.Name)
+                    if nombreLower:find("ammo") or nombreLower:find("bullet") or nombreLower:find("mag") then
+                        -- Si es la munición actual, la igualamos al máximo
+                        local maxAmmo = hijo:FindFirstChild("MaxAmmo") or hijo:FindFirstChild("AmmoMax")
+                        if maxAmmo and maxAmmo:IsA("IntValue") and maxAmmo ~= valor then
+                            valor.Value = maxAmmo.Value
+                        else
+                            valor.Value = 999
+                        end
+                    end
+                end
+            end
+
+            -- 2. Acelerar animaciones de recarga
+            local animator = personaje:FindFirstChildOfClass("Animator")
+                or (personaje:FindFirstChild("Humanoid") and personaje.Humanoid:FindFirstChildOfClass("Animator"))
+            if animator then
+                for _, anim in ipairs(animator:GetPlayingAnimationTracks()) do
+                    local nombreAnim = string.lower(anim.Name)
+                    if nombreAnim:find("reload") or nombreAnim:find("recarga") then
+                        anim:AdjustSpeed(999)
+                    end
+                end
+            end
+        end
+    end
+end))
+
 addConn(Players.PlayerRemoving:Connect(function(jugador)
     local hl = espFolder:FindFirstChild("WallhackHL_" .. jugador.Name)
     if hl then hl:Destroy() end
+    local sb = espFolder:FindFirstChild("WallhackSB_" .. jugador.Name)
+    if sb then sb:Destroy() end
     local sk = espFolder:FindFirstChild("Skeleton_" .. jugador.Name)
     if sk then sk:Destroy() end
 end))
@@ -1248,6 +1336,7 @@ addCleanup(function()
     wallhackEnabled = false
     skeletonEnabled = false
     aimActive = false
+    instantReloadEnabled = false
     skeletons = {}
 
     print("[Ryze.xyz] Todo desactivado correctamente ✅")
