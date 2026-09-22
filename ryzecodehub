@@ -1,0 +1,256 @@
+-- RyzeCodeHub.lua
+-- Librería de UI personal
+-- Autor: Ryze
+
+local RyzeCodeHub = {}
+
+-- ============================
+-- CONFIGURACIÓN GLOBAL
+-- ============================
+RyzeCodeHub.Version = "1.0.0"
+RyzeCodeHub.Name = "RyzeCodeHub"
+
+-- ============================
+-- CREAR VENTANA
+-- ============================
+function RyzeCodeHub:CreateWindow(config)
+    config = config or {}
+    local windowName = config.Name or "RyzeCodeHub"
+    local loadingTitle = config.LoadingTitle or "Cargando..."
+    local loadingSubtitle = config.LoadingSubtitle or "by RyzeCodeHub"
+
+    -- ScreenGui contenedor
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "RyzeCodeHub_UI"
+    screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.Parent = game.CoreGui
+
+    -- Marco principal
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 600, 0, 400)
+    mainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = screenGui
+
+    -- Esquinas redondeadas
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = mainFrame
+
+    -- Título de la ventana
+    local title = Instance.new("TextLabel")
+    title.Name = "Title"
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    title.BorderSizePixel = 0
+    title.Text = windowName
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.TextSize = 18
+    title.Font = Enum.Font.GothamBold
+    title.Parent = mainFrame
+
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 8)
+    titleCorner.Parent = title
+
+    -- Contenedor de pestañas (lateral izquierdo)
+    local tabList = Instance.new("Frame")
+    tabList.Name = "TabList"
+    tabList.Size = UDim2.new(0, 150, 1, -40)
+    tabList.Position = UDim2.new(0, 0, 0, 40)
+    tabList.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+    tabList.BorderSizePixel = 0
+    tabList.Parent = mainFrame
+
+    -- Contenedor de contenido (lateral derecho)
+    local contentFrame = Instance.new("Frame")
+    contentFrame.Name = "ContentFrame"
+    contentFrame.Size = UDim2.new(1, -150, 1, -40)
+    contentFrame.Position = UDim2.new(0, 150, 0, 40)
+    contentFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    contentFrame.BorderSizePixel = 0
+    contentFrame.Parent = mainFrame
+
+    -- ============================
+    -- OBJETO WINDOW
+    -- ============================
+    local Window = {}
+
+    -- Lista de pestañas
+    local tabs = {}
+    local currentTab = nil
+
+    function Window:CreateTab(tabName, icon)
+        tabName = tabName or "Tab"
+
+        -- Botón de la pestaña
+        local tabButton = Instance.new("TextButton")
+        tabButton.Name = "Tab_" .. tabName
+        tabButton.Size = UDim2.new(1, 0, 0, 35)
+        tabButton.Position = UDim2.new(0, 0, 0, #tabs * 35)
+        tabButton.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+        tabButton.BorderSizePixel = 0
+        tabButton.Text = tabName
+        tabButton.TextColor3 = Color3.fromRGB(200, 200, 210)
+        tabButton.TextSize = 14
+        tabButton.Font = Enum.Font.Gotham
+        tabButton.Parent = tabList
+
+        -- Contenedor de contenido de esta pestaña
+        local tabContent = Instance.new("ScrollingFrame")
+        tabContent.Name = "Content_" .. tabName
+        tabContent.Size = UDim2.new(1, 0, 1, 0)
+        tabContent.BackgroundTransparency = 1
+        tabContent.BorderSizePixel = 0
+        tabContent.ScrollBarThickness = 4
+        tabContent.CanvasSize = UDim2.new(0, 0, 0, 0)
+        tabContent.Visible = false
+        tabContent.Parent = contentFrame
+
+        -- Layout para los elementos
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0, 6)
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Parent = tabContent
+
+        local padding = Instance.new("UIPadding")
+        padding.PaddingTop = UDim.new(0, 8)
+        padding.PaddingLeft = UDim.new(0, 8)
+        padding.PaddingRight = UDim.new(0, 8)
+        padding.Parent = tabContent
+
+        -- Actualizar tamaño del canvas automáticamente
+        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            tabContent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
+        end)
+
+        -- Objeto Tab
+        local Tab = {}
+
+        -- Botón
+        function Tab:CreateButton(buttonConfig)
+            buttonConfig = buttonConfig or {}
+            local buttonName = buttonConfig.Name or "Button"
+            local callback = buttonConfig.Callback or function() end
+
+            local button = Instance.new("TextButton")
+            button.Name = "Button_" .. buttonName
+            button.Size = UDim2.new(1, -16, 0, 32)
+            button.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+            button.BorderSizePixel = 0
+            button.Text = buttonName
+            button.TextColor3 = Color3.fromRGB(255, 255, 255)
+            button.TextSize = 14
+            button.Font = Enum.Font.Gotham
+            button.Parent = tabContent
+
+            local btnCorner = Instance.new("UICorner")
+            btnCorner.CornerRadius = UDim.new(0, 6)
+            btnCorner.Parent = button
+
+            button.MouseButton1Click:Connect(function()
+                pcall(callback)
+            end)
+
+            return button
+        end
+
+        -- Toggle
+        function Tab:CreateToggle(toggleConfig)
+            toggleConfig = toggleConfig or {}
+            local toggleName = toggleConfig.Name or "Toggle"
+            local currentValue = toggleConfig.CurrentValue or false
+            local callback = toggleConfig.Callback or function() end
+
+            local toggle = Instance.new("TextButton")
+            toggle.Name = "Toggle_" .. toggleName
+            toggle.Size = UDim2.new(1, -16, 0, 32)
+            toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+            toggle.BorderSizePixel = 0
+            toggle.Text = toggleName
+            toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+            toggle.TextSize = 14
+            toggle.Font = Enum.Font.Gotham
+            toggle.TextXAlignment = Enum.TextXAlignment.Left
+            toggle.Parent = tabContent
+
+            local toggleCorner = Instance.new("UICorner")
+            toggleCorner.CornerRadius = UDim.new(0, 6)
+            toggleCorner.Parent = toggle
+
+            local paddingText = Instance.new("UIPadding")
+            paddingText.PaddingLeft = UDim.new(0, 10)
+            paddingText.Parent = toggle
+
+            -- Indicador on/off
+            local indicator = Instance.new("Frame")
+            indicator.Name = "Indicator"
+            indicator.Size = UDim2.new(0, 40, 0, 20)
+            indicator.Position = UDim2.new(1, -50, 0.5, -10)
+            indicator.BackgroundColor3 = currentValue and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(60, 60, 70)
+            indicator.BorderSizePixel = 0
+            indicator.Parent = toggle
+
+            local indCorner = Instance.new("UICorner")
+            indCorner.CornerRadius = UDim.new(1, 0)
+            indCorner.Parent = indicator
+
+            local circle = Instance.new("Frame")
+            circle.Name = "Circle"
+            circle.Size = UDim2.new(0, 16, 0, 16)
+            circle.Position = currentValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+            circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            circle.BorderSizePixel = 0
+            circle.Parent = indicator
+
+            local circleCorner = Instance.new("UICorner")
+            circleCorner.CornerRadius = UDim.new(1, 0)
+            circleCorner.Parent = circle
+
+            toggle.MouseButton1Click:Connect(function()
+                currentValue = not currentValue
+                indicator.BackgroundColor3 = currentValue and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(60, 60, 70)
+                circle.Position = currentValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+                pcall(callback, currentValue)
+            end)
+
+            return toggle
+        end
+
+        -- Guardamos la pestaña
+        tabs[#tabs + 1] = { Button = tabButton, Content = tabContent }
+
+        -- Al hacer clic en la pestaña, mostrarla
+        tabButton.MouseButton1Click:Connect(function()
+            for _, tab in ipairs(tabs) do
+                tab.Content.Visible = false
+                tab.Button.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+                tab.Button.TextColor3 = Color3.fromRGB(200, 200, 210)
+            end
+            tabContent.Visible = true
+            tabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 58)
+            tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        end)
+
+        -- Si es la primera pestaña, la mostramos automáticamente
+        if #tabs == 1 then
+            tabContent.Visible = true
+            tabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 58)
+            tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        end
+
+        return Tab
+    end
+
+    -- Destruir la ventana
+    function Window:Destroy()
+        screenGui:Destroy()
+    end
+
+    return Window
+end
+
+return RyzeCodeHub
