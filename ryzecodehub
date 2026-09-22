@@ -300,17 +300,23 @@ function RyzeCodeHub:CreateWindow(config)
     espFolder.Name = "ESP"
     espFolder.Parent = espGui
 
+    -- ============================
+    -- SISTEMA DE LIMPIEZA (importante)
+    -- ============================
     local cleanupFunctions = {}
 
     local function addCleanup(fn)
         table.insert(cleanupFunctions, fn)
     end
 
+    -- Botón cerrar: destruye UI + limpia todo
     closeBtn.MouseButton1Click:Connect(function()
+        -- Ejecutamos todas las funciones de limpieza
         for _, fn in ipairs(cleanupFunctions) do
             pcall(fn)
         end
 
+        -- Destruimos la UI
         screenGui:Destroy()
         espGui:Destroy()
     end)
@@ -424,6 +430,7 @@ function RyzeCodeHub:CreateWindow(config)
                 pcall(callback, currentValue)
             end)
 
+            -- Al cerrar: forzar OFF y ejecutar callback
             addCleanup(function()
                 if toggleState.value then
                     toggleState.value = false
@@ -786,7 +793,7 @@ local EspTab = AutoWindow:CreateTab("ESP")
 
 local addCleanup = AutoWindow._addCleanup
 
--- Estado
+-- Estado AIM
 local aimbotEnabled = false
 local fovValue = 70
 local aimDistance = 600
@@ -796,8 +803,11 @@ local boneAim = "HEAD"
 local targetDead = false
 local smoothValue = 50
 local wallCheck = false
+
+-- Estado SILENT
 local silentAimEnabled = false
 
+-- Estado ESP
 local espFolder = AutoWindow._espFolder
 local wallhackEnabled = false
 local skeletonEnabled = false
@@ -872,7 +882,6 @@ AimTab:CreateToggle({
     CurrentValue = false,
     Callback = function(valor)
         targetDead = valor
-        print("[Ryze.xyz] TARGET DEAD:", valor)
     end
 })
 
@@ -938,28 +947,8 @@ EspTab:CreateToggle({
 })
 
 -- ============================
--- AIM: LÓGICA
+-- FUNCIONES DE LÓGICA
 -- ============================
-
--- Comprobación de "muerto" mejorada:
--- Un personaje está muerto si:
--- 1. No tiene Humanoid
--- 2. El Humanoid tiene Health <= 0
--- 3. El Humanoid está en estado Dead
--- 4. Tiene el tag "Dead" en el personaje (algunos juegos lo usan)
-local function estaMuerto(personaje)
-    if not personaje then return true end
-
-    local humanoide = personaje:FindFirstChildOfClass("Humanoid")
-    if not humanoide then return true end
-
-    if humanoide.Health <= 0 then return true end
-
-    if humanoide:GetState() == Enum.HumanoidStateType.Dead then return true end
-
-    return false
-end
-
 local function obtenerPuntoObjetivo(personaje, forzarCabeza)
     if forzarCabeza or boneAim == "HEAD" then
         local cabeza = personaje:FindFirstChild("Head")
@@ -1016,30 +1005,29 @@ local function obtenerJugadorCercano(forzarCabeza)
         if jugador ~= LocalPlayer then
             local personaje = jugador.Character
             if personaje then
-                -- COMPROBACIÓN DE MUERTO MEJORADA
-                local muerto = estaMuerto(personaje)
-                if muerto and not targetDead then
-                    continue
-                end
+                local humanoide = personaje:FindFirstChildOfClass("Humanoid")
+                if humanoide then
+                    if humanoide.Health <= 0 and not targetDead then continue end
 
-                local puntoObjetivo = obtenerPuntoObjetivo(personaje, forzarCabeza)
-                if puntoObjetivo then
-                    if wallCheck then
-                        if hayParedEntre(cam.CFrame.Position, puntoObjetivo.Position, personaje) then
-                            continue
+                    local puntoObjetivo = obtenerPuntoObjetivo(personaje, forzarCabeza)
+                    if puntoObjetivo then
+                        if wallCheck then
+                            if hayParedEntre(cam.CFrame.Position, puntoObjetivo.Position, personaje) then
+                                continue
+                            end
                         end
-                    end
 
-                    local distanciaStuds = (puntoObjetivo.Position - cam.CFrame.Position).Magnitude
-                    local distanciaMetros = distanciaStuds * 0.28
+                        local distanciaStuds = (puntoObjetivo.Position - cam.CFrame.Position).Magnitude
+                        local distanciaMetros = distanciaStuds * 0.28
 
-                    if distanciaMetros <= aimDistance then
-                        local screenPoint, onScreen = cam:WorldToViewportPoint(puntoObjetivo.Position)
-                        if onScreen then
-                            local distPantalla = (Vector2.new(screenPoint.X, screenPoint.Y) - centroPantalla).Magnitude
-                            if distPantalla <= radioFov and distPantalla < mejorDistancia then
-                                mejorDistancia = distPantalla
-                                mejorObjetivo = puntoObjetivo
+                        if distanciaMetros <= aimDistance then
+                            local screenPoint, onScreen = cam:WorldToViewportPoint(puntoObjetivo.Position)
+                            if onScreen then
+                                local distPantalla = (Vector2.new(screenPoint.X, screenPoint.Y) - centroPantalla).Magnitude
+                                if distPantalla <= radioFov and distPantalla < mejorDistancia then
+                                    mejorDistancia = distPantalla
+                                    mejorObjetivo = puntoObjetivo
+                                end
                             end
                         end
                     end
@@ -1052,7 +1040,7 @@ local function obtenerJugadorCercano(forzarCabeza)
 end
 
 -- ============================
--- CONEXIONES
+-- CONEXIONES (guardadas para poder desconectar)
 -- ============================
 local conexiones = {}
 
@@ -1094,7 +1082,7 @@ addConn(UserInputService.InputEnded:Connect(function(input)
     if nombre == toggleKey then aimActive = false end
 end))
 
--- Silent Aim (versión intento: mueve la cámara y espera 1 frame)
+-- Silent Aim
 addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not silentAimEnabled then return end
     if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
@@ -1113,67 +1101,22 @@ addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     cam.CFrame = cframeOriginal
 end))
 
--- ============================
--- ESP: LÓGICA
--- ============================
-
--- LIMPIEZA: cuando un jugador respawnea, borrar su highlight viejo
-local function onCharacterAdded(jugador, personaje)
-    -- Borrar highlight del personaje anterior
-    local viejoHL = espFolder:FindFirstChild("WallhackHL_" .. jugador.Name)
-    if viejoHL then viejoHL:Destroy() end
-
-    -- Borrar esqueleto del personaje anterior
-    local viejoSk = espFolder:FindFirstChild("Skeleton_" .. jugador.Name)
-    if viejoSk then viejoSk:Destroy() end
-
-    -- Limpiar la tabla de esqueletos
-    if skeletons[jugador.Character] then
-        skeletons[jugador.Character] = nil
-    end
-end
-
--- Conectar CharacterAdded para todos los jugadores actuales y futuros
-for _, jugador in ipairs(Players:GetPlayers()) do
-    if jugador ~= LocalPlayer then
-        addConn(jugador.CharacterAdded:Connect(function(personaje)
-            onCharacterAdded(jugador, personaje)
-        end))
-    end
-end
-
-addConn(Players.PlayerAdded:Connect(function(jugador)
-    if jugador ~= LocalPlayer then
-        addConn(jugador.CharacterAdded:Connect(function(personaje)
-            onCharacterAdded(jugador, personaje)
-        end))
-    end
-end))
-
+-- ESP: Highlights y Skeleton
 addConn(RunService.RenderStepped:Connect(function()
     if wallhackEnabled then
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
-                local personaje = jugador.Character
-                local nombre = "WallhackHL_" .. jugador.Name
-                local hlExistente = espFolder:FindFirstChild(nombre)
-
-                -- Si no existe, lo creamos
-                if not hlExistente then
+                local nombre = "WallhackHL_" .. jugador.Character.Name
+                if not espFolder:FindFirstChild(nombre) then
                     local hl = Instance.new("Highlight")
                     hl.Name = nombre
-                    hl.Adornee = personaje
+                    hl.Adornee = jugador.Character
                     hl.FillColor = Color3.fromRGB(30, 144, 255)
                     hl.FillTransparency = 0.5
                     hl.OutlineColor = Color3.fromRGB(255, 255, 255)
                     hl.OutlineTransparency = 0
                     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                     hl.Parent = espFolder
-                else
-                    -- Si existe pero su Adornee no es el personaje actual, lo actualizamos
-                    if hlExistente.Adornee ~= personaje then
-                        hlExistente.Adornee = personaje
-                    end
                 end
             end
         end
@@ -1196,7 +1139,7 @@ addConn(RunService.RenderStepped:Connect(function()
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
                 local personaje = jugador.Character
-                local nombre = "Skeleton_" .. jugador.Name
+                local nombre = "Skeleton_" .. personaje.Name
 
                 if not espFolder:FindFirstChild(nombre) then
                     local carpeta = Instance.new("Folder")
@@ -1268,19 +1211,23 @@ end))
 -- LIMPIEZA AL CERRAR
 -- ============================
 addCleanup(function()
+    -- Desconectar todas las conexiones
     for _, conn in ipairs(conexiones) do
         pcall(function() conn:Disconnect() end)
     end
     conexiones = {}
 
+    -- Limpiar highlights y esqueletos
     for _, hijo in ipairs(espFolder:GetChildren()) do
         pcall(function() hijo:Destroy() end)
     end
 
+    -- Ocultar el círculo FOV
     if AutoWindow._fovCircle then
         AutoWindow._fovCircle.Visible = false
     end
 
+    -- Resetear variables
     aimbotEnabled = false
     silentAimEnabled = false
     wallhackEnabled = false
