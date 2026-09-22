@@ -48,7 +48,6 @@ local function keyName(userInputType)
     if userInputType == Enum.UserInputType.MouseButton3 then return "Clic Central" end
     if userInputType == Enum.UserInputType.MouseWheel then return "Rueda" end
     local name = userInputType.Name
-    -- Quitar "Enum.UserInputType." si aparece
     name = name:gsub("Enum.UserInputType.", "")
     return name
 end
@@ -66,7 +65,6 @@ function RyzeCodeHub:CreateWindow(config)
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.Parent = game.CoreGui
 
-    -- Ventana principal
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
     mainFrame.Size = UDim2.new(0, 600, 0, 400)
@@ -88,7 +86,6 @@ function RyzeCodeHub:CreateWindow(config)
     border.Thickness = 2
     border.Parent = mainFrame
 
-    -- Barra de título
     local titleBar = Instance.new("Frame")
     titleBar.Name = "TitleBar"
     titleBar.Size = UDim2.new(1, 0, 0, 40)
@@ -110,7 +107,6 @@ function RyzeCodeHub:CreateWindow(config)
     title.Font = Enum.Font.GothamBold
     title.Parent = titleBar
 
-    -- Botón minimizar
     local minimizeBtn = Instance.new("TextButton")
     minimizeBtn.Name = "MinimizeBtn"
     minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
@@ -123,7 +119,6 @@ function RyzeCodeHub:CreateWindow(config)
     minimizeBtn.Font = Enum.Font.GothamBold
     minimizeBtn.Parent = titleBar
 
-    -- Botón cerrar
     local closeBtn = Instance.new("TextButton")
     closeBtn.Name = "CloseBtn"
     closeBtn.Size = UDim2.new(0, 30, 0, 30)
@@ -136,7 +131,6 @@ function RyzeCodeHub:CreateWindow(config)
     closeBtn.Font = Enum.Font.GothamBold
     closeBtn.Parent = titleBar
 
-    -- Línea horizontal
     local divider = Instance.new("Frame")
     divider.Name = "Divider"
     divider.Size = UDim2.new(1, 0, 0, 2)
@@ -146,7 +140,6 @@ function RyzeCodeHub:CreateWindow(config)
     divider.ZIndex = 2
     divider.Parent = mainFrame
 
-    -- Lista de pestañas
     local tabList = Instance.new("Frame")
     tabList.Name = "TabList"
     tabList.Size = UDim2.new(0, 150, 1, -42)
@@ -155,7 +148,6 @@ function RyzeCodeHub:CreateWindow(config)
     tabList.BorderSizePixel = 0
     tabList.Parent = mainFrame
 
-    -- Línea vertical
     local verticalDivider = Instance.new("Frame")
     verticalDivider.Name = "VerticalDivider"
     verticalDivider.Size = UDim2.new(0, 2, 1, -42)
@@ -165,7 +157,6 @@ function RyzeCodeHub:CreateWindow(config)
     verticalDivider.ZIndex = 2
     verticalDivider.Parent = mainFrame
 
-    -- Contenido
     local contentFrame = Instance.new("Frame")
     contentFrame.Name = "ContentFrame"
     contentFrame.Size = UDim2.new(1, -152, 1, -42)
@@ -174,7 +165,6 @@ function RyzeCodeHub:CreateWindow(config)
     contentFrame.BorderSizePixel = 0
     contentFrame.Parent = mainFrame
 
-    -- Bola flotante
     local bubble = Instance.new("TextButton")
     bubble.Name = "Bubble"
     bubble.Size = UDim2.new(0, 60, 0, 60)
@@ -210,7 +200,6 @@ function RyzeCodeHub:CreateWindow(config)
         mainFrame.Visible = true
     end)
 
-    -- Minimizar
     minimizeBtn.MouseEnter:Connect(function()
         minimizeBtn.TextColor3 = Color3.fromRGB(180, 200, 230)
     end)
@@ -222,7 +211,6 @@ function RyzeCodeHub:CreateWindow(config)
         bubble.Visible = true
     end)
 
-    -- Cerrar
     closeBtn.MouseEnter:Connect(function()
         closeBtn.TextColor3 = Color3.fromRGB(255, 120, 120)
     end)
@@ -260,7 +248,6 @@ function RyzeCodeHub:CreateWindow(config)
         fovCircle.Size = UDim2.new(0, diametro, 0, diametro)
     end
 
-    -- Objeto Window
     local Window = {}
     local tabs = {}
 
@@ -306,9 +293,7 @@ function RyzeCodeHub:CreateWindow(config)
 
         local Tab = {}
 
-        -- ============================
         -- BOTÓN
-        -- ============================
         function Tab:CreateButton(buttonConfig)
             buttonConfig = buttonConfig or {}
             local buttonName = buttonConfig.Name or "Button"
@@ -342,9 +327,7 @@ function RyzeCodeHub:CreateWindow(config)
             return button
         end
 
-        -- ============================
         -- TOGGLE
-        -- ============================
         function Tab:CreateToggle(toggleConfig)
             toggleConfig = toggleConfig or {}
             local toggleName = toggleConfig.Name or "Toggle"
@@ -403,9 +386,7 @@ function RyzeCodeHub:CreateWindow(config)
             return toggle
         end
 
-        -- ============================
         -- SLIDER
-        -- ============================
         function Tab:CreateSlider(sliderConfig)
             sliderConfig = sliderConfig or {}
             local sliderName = sliderConfig.Name or "Slider"
@@ -428,7 +409,6 @@ function RyzeCodeHub:CreateWindow(config)
             contCorner.Parent = container
 
             local label = Instance.new("TextLabel")
-            label.Name = "Label"
             label.Size = UDim2.new(1, -80, 0, 20)
             label.Position = UDim2.new(0, 10, 0, 4)
             label.BackgroundTransparency = 1
@@ -440,7 +420,6 @@ function RyzeCodeHub:CreateWindow(config)
             label.Parent = container
 
             local valueLabel = Instance.new("TextLabel")
-            valueLabel.Name = "ValueLabel"
             valueLabel.Size = UDim2.new(0, 70, 0, 20)
             valueLabel.Position = UDim2.new(1, -75, 0, 4)
             valueLabel.BackgroundTransparency = 1
@@ -452,7 +431,6 @@ function RyzeCodeHub:CreateWindow(config)
             valueLabel.Parent = container
 
             local bar = Instance.new("Frame")
-            bar.Name = "Bar"
             bar.Size = UDim2.new(1, -20, 0, 8)
             bar.Position = UDim2.new(0, 10, 1, -14)
             bar.BackgroundColor3 = Colors.SliderEmpty
@@ -464,7 +442,6 @@ function RyzeCodeHub:CreateWindow(config)
             barCorner.Parent = bar
 
             local fill = Instance.new("Frame")
-            fill.Name = "Fill"
             fill.Size = UDim2.new(0, 0, 1, 0)
             fill.BackgroundColor3 = Colors.SliderFill
             fill.BorderSizePixel = 0
@@ -475,7 +452,6 @@ function RyzeCodeHub:CreateWindow(config)
             fillCorner.Parent = fill
 
             local knob = Instance.new("Frame")
-            knob.Name = "Knob"
             knob.Size = UDim2.new(0, 16, 0, 16)
             knob.Position = UDim2.new(0, -8, 0.5, -8)
             knob.BackgroundColor3 = Colors.SliderKnob
@@ -535,9 +511,7 @@ function RyzeCodeHub:CreateWindow(config)
             return container
         end
 
-        -- ============================
         -- DROPDOWN
-        -- ============================
         function Tab:CreateDropdown(dropdownConfig)
             dropdownConfig = dropdownConfig or {}
             local dropdownName = dropdownConfig.Name or "Dropdown"
@@ -559,7 +533,6 @@ function RyzeCodeHub:CreateWindow(config)
             contCorner.Parent = container
 
             local label = Instance.new("TextLabel")
-            label.Name = "Label"
             label.Size = UDim2.new(1, -40, 1, 0)
             label.Position = UDim2.new(0, 10, 0, 0)
             label.BackgroundTransparency = 1
@@ -580,9 +553,7 @@ function RyzeCodeHub:CreateWindow(config)
             arrow.Font = Enum.Font.GothamBold
             arrow.Parent = container
 
-            -- Lista de opciones (oculta)
             local optionList = Instance.new("Frame")
-            optionList.Name = "OptionList"
             optionList.Size = UDim2.new(1, 0, 0, #options * 28)
             optionList.Position = UDim2.new(0, 0, 1, 4)
             optionList.BackgroundColor3 = Colors.DropdownBg
@@ -631,9 +602,7 @@ function RyzeCodeHub:CreateWindow(config)
             return container
         end
 
-        -- ============================
-        -- KEYBIND (elegir tecla)
-        -- ============================
+        -- KEYBIND
         function Tab:CreateKeybind(keybindConfig)
             keybindConfig = keybindConfig or {}
             local keybindName = keybindConfig.Name or "Keybind"
@@ -723,15 +692,14 @@ end
 local AutoWindow = RyzeCodeHub:CreateWindow({ Name = "Ryze.xyz" })
 local AutoTab = AutoWindow:CreateTab("AIM")
 
--- Variables compartidas para la lógica
+-- Estado compartido
 local aimbotEnabled = false
 local fovValue = 70
 local aimDistance = 600
-local toggleKey = "F"        -- tecla por defecto
-local toggleType = "Keyboard" -- "Keyboard" o "Mouse"
-local aimActive = false       -- se activa mientras se mantiene la tecla
+local toggleKey = "F"
+local aimActive = false
 
--- Toggle Aimbot
+-- Toggle principal
 AutoTab:CreateToggle({
     Name = "Aimbot",
     CurrentValue = false,
@@ -784,7 +752,7 @@ AutoTab:CreateDropdown({
 })
 
 -- Keybind TOGGLE AIM
-local keybindBtn, getCurrentKey = AutoTab:CreateKeybind({
+AutoTab:CreateKeybind({
     Name = "TOGGLE AIM",
     DefaultKey = "F",
     Callback = function(nombre, input)
@@ -801,7 +769,6 @@ local function obtenerJugadorCercano()
     if not cam then return nil end
 
     local centroPantalla = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
-    -- Radio en píxeles que representa el FOV
     local radioFov = fovValue * 6 / 2
 
     local mejorJugador = nil
@@ -814,12 +781,10 @@ local function obtenerJugadorCercano()
                 local hrp = personaje:FindFirstChild("HumanoidRootPart")
                 local humanoide = personaje:FindFirstChildOfClass("Humanoid")
                 if hrp and humanoide and humanoide.Health > 0 then
-                    -- Distancia en studs al jugador (1 stud ≈ 0.28 m, así que 200M ≈ 700 studs)
                     local distanciaStuds = (hrp.Position - cam.CFrame.Position).Magnitude
                     local distanciaMetros = distanciaStuds * 0.28
 
                     if distanciaMetros <= aimDistance then
-                        -- Proyección a pantalla
                         local screenPoint, onScreen = cam:WorldToViewportPoint(hrp.Position)
                         if onScreen then
                             local distPantalla = (Vector2.new(screenPoint.X, screenPoint.Y) - centroPantalla).Magnitude
@@ -843,15 +808,38 @@ local function apuntarAlJugador(hrp)
     cam.CFrame = CFrame.new(cam.CFrame.Position, hrp.Position)
 end
 
--- Bucle del aimbot
+-- Bucle del aimbot (solo apunta mientras la tecla está pulsada)
 RunService.RenderStepped:Connect(function()
     if not aimbotEnabled or not aimActive then return end
-
     local objetivo = obtenerJugadorCercano()
     if objetivo then
         apuntarAlJugador(objetivo)
     end
 end)
 
--- Detectar la tecla o clic para activar/desactivar el aim
-UserInputService.InputBegan:Connect(function(input
+-- Detectar la tecla/clic configurada para mantener el aim
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+
+    local nombre = keyName(input.UserInputType)
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        nombre = input.KeyCode.Name
+    end
+
+    if nombre == toggleKey then
+        aimActive = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    local nombre = keyName(input.UserInputType)
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        nombre = input.KeyCode.Name
+    end
+
+    if nombre == toggleKey then
+        aimActive = false
+    end
+end)
+
+return RyzeCodeHub
