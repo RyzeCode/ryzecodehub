@@ -83,7 +83,7 @@ function RyzeCodeHub:CreateWindow(config)
     title.Font = Enum.Font.GothamBold
     title.Parent = titleBar
 
-    -- Botón minimizar (sin fondo)
+    -- Botón minimizar
     local minimizeBtn = Instance.new("TextButton")
     minimizeBtn.Name = "MinimizeBtn"
     minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
@@ -96,7 +96,7 @@ function RyzeCodeHub:CreateWindow(config)
     minimizeBtn.Font = Enum.Font.GothamBold
     minimizeBtn.Parent = titleBar
 
-    -- Botón cerrar (sin fondo)
+    -- Botón cerrar
     local closeBtn = Instance.new("TextButton")
     closeBtn.Name = "CloseBtn"
     closeBtn.Size = UDim2.new(0, 30, 0, 30)
@@ -172,7 +172,7 @@ function RyzeCodeHub:CreateWindow(config)
         mainFrame.Visible = true
     end)
 
-    -- Minimizar (hover: solo cambia el color del texto)
+    -- Minimizar
     minimizeBtn.MouseEnter:Connect(function()
         minimizeBtn.TextColor3 = Color3.fromRGB(180, 200, 230)
     end)
@@ -184,7 +184,7 @@ function RyzeCodeHub:CreateWindow(config)
         bubble.Visible = true
     end)
 
-    -- Cerrar (hover: texto rojo claro)
+    -- Cerrar
     closeBtn.MouseEnter:Connect(function()
         closeBtn.TextColor3 = Color3.fromRGB(255, 120, 120)
     end)
@@ -365,21 +365,8 @@ end
 -- AUTO-SETUP
 -- ============================
 local AutoWindow = RyzeCodeHub:CreateWindow({ Name = "Ryze.xyz" })
-local AutoTab = AutoWindow:CreateTab("Troll Scripts")
+local AutoTab = AutoWindow:CreateTab("AIM")
 
-AutoTab:CreateButton({
-    Name = "Ejemplo",
-    Callback = function()
-        print("[Ryze.xyz] Botón pulsado ✅")
-    end
-})
-
-AutoTab:CreateToggle({
-    Name = "Ejemplo Toggle",
-    CurrentValue = false,
-    Callback = function(v)
-        print("[Ryze.xyz] Toggle:", v)
-    end
-})
+-- (Aquí irán tus funciones de AIM más adelante)
 
 return RyzeCodeHub
