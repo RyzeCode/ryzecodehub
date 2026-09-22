@@ -170,13 +170,10 @@ function RyzeCodeHub:CreateWindow(config)
     contentFrame.ZIndex = 6
     contentFrame.Parent = mainFrame
 
-    -- ============================
-    -- BOLA FLOTANTE (arriba, no centro)
-    -- ============================
     local bubble = Instance.new("TextButton")
     bubble.Name = "Bubble"
     bubble.Size = UDim2.new(0, 60, 0, 60)
-    bubble.Position = UDim2.new(0.5, -30, 0, 10)  -- Arriba de la pantalla
+    bubble.Position = UDim2.new(0.5, -30, 0, 10)
     bubble.AnchorPoint = Vector2.new(0, 0)
     bubble.BackgroundColor3 = Colors.Bubble
     bubble.BorderSizePixel = 0
@@ -186,7 +183,6 @@ function RyzeCodeHub:CreateWindow(config)
     bubble.Font = Enum.Font.GothamBold
     bubble.Visible = false
     bubble.Active = true
-    bubble.Draggable = true
     bubble.Parent = screenGui
 
     local bubbleCorner = Instance.new("UICorner")
@@ -198,7 +194,6 @@ function RyzeCodeHub:CreateWindow(config)
     bubbleBorder.Thickness = 2
     bubbleBorder.Parent = bubble
 
-    -- Variables para detectar arrastre vs clic
     local bubbleDragging = false
     local bubbleStartPos = nil
     local bubbleStartMouse = nil
@@ -210,7 +205,6 @@ function RyzeCodeHub:CreateWindow(config)
         bubble.BackgroundColor3 = Colors.Bubble
     end)
 
-    -- Al empezar a pulsar la bola
     bubble.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
         or input.UserInputType == Enum.UserInputType.Touch then
@@ -220,7 +214,6 @@ function RyzeCodeHub:CreateWindow(config)
         end
     end)
 
-    -- Al mover el ratón mientras pulsas
     UserInputService.InputChanged:Connect(function(input)
         if not bubbleDragging then return end
         if input.UserInputType ~= Enum.UserInputType.MouseMovement
@@ -229,7 +222,6 @@ function RyzeCodeHub:CreateWindow(config)
         end
 
         local delta = input.Position - bubbleStartMouse
-        -- Si se ha movido más de 5 píxeles, consideramos que es arrastre
         if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
             bubble.Position = UDim2.new(
                 bubbleStartPos.X.Scale, bubbleStartPos.X.Offset + delta.X,
@@ -238,7 +230,6 @@ function RyzeCodeHub:CreateWindow(config)
         end
     end)
 
-    -- Al soltar el ratón
     bubble.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
         or input.UserInputType == Enum.UserInputType.Touch then
@@ -247,7 +238,6 @@ function RyzeCodeHub:CreateWindow(config)
 
             bubbleDragging = false
 
-            -- Solo abrimos el menú si NO se movió
             if not seMovio then
                 bubble.Visible = false
                 mainFrame.Visible = true
@@ -756,7 +746,14 @@ end
 -- ============================
 local AutoWindow = RyzeCodeHub:CreateWindow({ Name = "Ryze.xyz" })
 local AimTab = AutoWindow:CreateTab("AIM")
+local SilentTab = AutoWindow:CreateTab("SILENT")
 local EspTab = AutoWindow:CreateTab("ESP")
+
+-- ============================
+-- ORDEN DE PESTAÑAS
+-- ============================
+-- (El orden en el que se crean las pestañas determina su posición)
+-- AIM, SILENT, ESP
 
 -- Estado AIM
 local aimbotEnabled = false
@@ -768,6 +765,9 @@ local boneAim = "HEAD"
 local targetDead = false
 local smoothValue = 50
 local wallCheck = false
+
+-- Estado SILENT
+local silentAimEnabled = false
 
 -- Estado ESP
 local espFolder = AutoWindow._espFolder
@@ -864,6 +864,18 @@ AimTab:CreateKeybind({
 })
 
 -- ============================
+-- SILENT: CONTROLES
+-- ============================
+SilentTab:CreateToggle({
+    Name = "SILENT AIM",
+    CurrentValue = false,
+    Callback = function(valor)
+        silentAimEnabled = valor
+        print("[Ryze.xyz] Silent Aim:", valor)
+    end
+})
+
+-- ============================
 -- ESP: CONTROLES
 -- ============================
 EspTab:CreateToggle({
@@ -900,8 +912,8 @@ EspTab:CreateToggle({
 -- ============================
 -- AIM: LÓGICA
 -- ============================
-local function obtenerPuntoObjetivo(personaje)
-    if boneAim == "HEAD" then
+local function obtenerPuntoObjetivo(personaje, forzarCabeza)
+    if forzarCabeza or boneAim == "HEAD" then
         local cabeza = personaje:FindFirstChild("Head")
         if cabeza then return cabeza end
     end
@@ -910,10 +922,15 @@ local function obtenerPuntoObjetivo(personaje)
         or personaje:FindFirstChild("Torso")
 end
 
+-- ============================
+-- WALL CHECK (arreglado)
+-- ============================
 local function hayParedEntre(desde, hasta, ignorarPersonaje)
     local rayParams = RaycastParams.new()
     rayParams.FilterType = Enum.RaycastFilterType.Exclude
-    local filtros = { }
+    rayParams.IgnoreWater = true
+
+    local filtros = {}
     if LocalPlayer.Character then
         table.insert(filtros, LocalPlayer.Character)
     end
@@ -921,14 +938,30 @@ local function hayParedEntre(desde, hasta, ignorarPersonaje)
         table.insert(filtros, ignorarPersonaje)
     end
     rayParams.FilterDescendantsInstances = filtros
-    rayParams.IgnoreWater = true
 
     local direccion = hasta - desde
     local resultado = workspace:Raycast(desde, direccion, rayParams)
-    return resultado ~= nil
+
+    -- Si no hay resultado, no hay pared
+    if not resultado then return false end
+
+    local golpeado = resultado.Instance
+
+    -- Si lo golpeado es parte del enemigo, no es pared
+    if ignorarPersonaje and golpeado:IsDescendantOf(ignorarPersonaje) then
+        return false
+    end
+
+    -- Si lo golpeado es parte de tu personaje, no es pared
+    if LocalPlayer.Character and golpeado:IsDescendantOf(LocalPlayer.Character) then
+        return false
+    end
+
+    -- Cualquier otra cosa es pared
+    return true
 end
 
-local function obtenerJugadorCercano()
+local function obtenerJugadorCercano(forzarCabeza)
     local cam = workspace.CurrentCamera
     if not cam then return nil end
 
@@ -946,7 +979,7 @@ local function obtenerJugadorCercano()
                 if humanoide then
                     if humanoide.Health <= 0 and not targetDead then continue end
 
-                    local puntoObjetivo = obtenerPuntoObjetivo(personaje)
+                    local puntoObjetivo = obtenerPuntoObjetivo(personaje, forzarCabeza)
                     if puntoObjetivo then
                         if wallCheck then
                             if hayParedEntre(cam.CFrame.Position, puntoObjetivo.Position, personaje) then
@@ -976,13 +1009,16 @@ local function obtenerJugadorCercano()
     return mejorObjetivo
 end
 
+-- ============================
+-- AIMBOT NORMAL
+-- ============================
 RunService.RenderStepped:Connect(function()
     if not aimbotEnabled or not aimActive then return end
 
     local cam = workspace.CurrentCamera
     if not cam then return end
 
-    local objetivo = obtenerJugadorCercano()
+    local objetivo = obtenerJugadorCercano(false)
     if objetivo then
         local factor = 1 - (smoothValue / 100)
         factor = math.clamp(factor, 0.03, 1)
@@ -1006,6 +1042,47 @@ UserInputService.InputEnded:Connect(function(input)
         nombre = input.KeyCode.Name
     end
     if nombre == toggleKey then aimActive = false end
+end)
+
+-- ============================
+-- SILENT AIM
+-- ============================
+-- Cuando pulsas el botón izquierdo del ratón, si hay un enemigo dentro del FOV:
+-- 1. Guardamos la CFrame actual de la cámara.
+-- 2. Movemos la cámara instantáneamente a la cabeza del enemigo.
+-- 3. Esperamos 1 frame (para que el servidor reciba la nueva CFrame).
+-- 4. Restauramos la CFrame original.
+--
+-- NOTA: Esto solo funciona si el juego envía el disparo al servidor
+-- en el mismo frame en el que pulsas el ratón. En juegos que validan
+-- la posición del disparo en el servidor (Raycast remoto), puede no funcionar.
+
+local silentActive = false
+local silentObjetivo = nil
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not silentAimEnabled then return end
+    if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+
+    local cam = workspace.CurrentCamera
+    if not cam then return end
+
+    -- Buscamos objetivo forzando la cabeza
+    local objetivo = obtenerJugadorCercano(true)
+    if not objetivo then return end
+
+    -- Guardamos la CFrame original
+    local cframeOriginal = cam.CFrame
+
+    -- Apuntamos a la cabeza instantáneamente
+    local cframeObjetivo = CFrame.new(cam.CFrame.Position, objetivo.Position)
+    cam.CFrame = cframeObjetivo
+
+    -- Esperamos 1 frame para que el servidor reciba la nueva CFrame
+    RunService.RenderStepped:Wait()
+
+    -- Restauramos la cámara original
+    cam.CFrame = cframeOriginal
 end)
 
 -- ============================
