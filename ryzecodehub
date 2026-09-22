@@ -11,23 +11,23 @@ RyzeCodeHub.Name = "Ryze.xyz"
 -- COLORES
 -- ============================
 local Colors = {
-    Background   = Color3.fromRGB(35, 35, 40),     -- fondo general
-    TitleBar     = Color3.fromRGB(20, 60, 120),    -- barra de título (azul oscuro)
-    TabList      = Color3.fromRGB(35, 35, 40),     -- lista de pestañas (igual que el fondo)
-    TabActive    = Color3.fromRGB(55, 55, 65),     -- pestaña activa
-    TabInactive  = Color3.fromRGB(35, 35, 40),     -- pestaña inactiva (igual que el fondo)
-    Content      = Color3.fromRGB(35, 35, 40),     -- contenido (igual que el fondo)
-    Button       = Color3.fromRGB(50, 50, 60),     -- botones
-    ButtonHover  = Color3.fromRGB(70, 70, 85),     -- botones al pasar el ratón
-    TextDark     = Color3.fromRGB(230, 230, 240),  -- texto
-    TextLight    = Color3.fromRGB(255, 255, 255),  -- texto claro
+    Background   = Color3.fromRGB(35, 35, 40),
+    TitleBar     = Color3.fromRGB(20, 60, 120),
+    TabList      = Color3.fromRGB(35, 35, 40),
+    TabActive    = Color3.fromRGB(55, 55, 65),
+    TabInactive  = Color3.fromRGB(35, 35, 40),
+    Content      = Color3.fromRGB(35, 35, 40),
+    Button       = Color3.fromRGB(50, 50, 60),
+    ButtonHover  = Color3.fromRGB(70, 70, 85),
+    TextDark     = Color3.fromRGB(230, 230, 240),
+    TextLight    = Color3.fromRGB(255, 255, 255),
     Minimize     = Color3.fromRGB(50, 50, 60),
     MinimizeHover= Color3.fromRGB(70, 70, 85),
     Close        = Color3.fromRGB(50, 50, 60),
     CloseHover   = Color3.fromRGB(200, 60, 60),
     Bubble       = Color3.fromRGB(20, 60, 120),
     BubbleHover  = Color3.fromRGB(30, 90, 170),
-    Border       = Color3.fromRGB(0, 0, 0),        -- borde negro
+    Border       = Color3.fromRGB(0, 0, 0),
 }
 
 -- ============================
@@ -60,7 +60,7 @@ function RyzeCodeHub:CreateWindow(config)
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = mainFrame
 
-    -- Borde negro alrededor de la ventana
+    -- Borde negro exterior
     local border = Instance.new("UIStroke")
     border.Color = Colors.Border
     border.Thickness = 2
@@ -122,19 +122,29 @@ function RyzeCodeHub:CreateWindow(config)
     closeCorner.CornerRadius = UDim.new(0, 6)
     closeCorner.Parent = closeBtn
 
-    -- Pestañas
+    -- Línea negra entre la barra azul y el resto
+    local divider = Instance.new("Frame")
+    divider.Name = "Divider"
+    divider.Size = UDim2.new(1, 0, 0, 2)
+    divider.Position = UDim2.new(0, 0, 0, 40)
+    divider.BackgroundColor3 = Colors.Border
+    divider.BorderSizePixel = 0
+    divider.ZIndex = 2
+    divider.Parent = mainFrame
+
+    -- Lista de pestañas
     local tabList = Instance.new("Frame")
     tabList.Name = "TabList"
-    tabList.Size = UDim2.new(0, 150, 1, -40)
-    tabList.Position = UDim2.new(0, 0, 0, 40)
+    tabList.Size = UDim2.new(0, 150, 1, -42)
+    tabList.Position = UDim2.new(0, 0, 0, 42)
     tabList.BackgroundColor3 = Colors.TabList
     tabList.BorderSizePixel = 0
     tabList.Parent = mainFrame
 
     local contentFrame = Instance.new("Frame")
     contentFrame.Name = "ContentFrame"
-    contentFrame.Size = UDim2.new(1, -150, 1, -40)
-    contentFrame.Position = UDim2.new(0, 150, 0, 40)
+    contentFrame.Size = UDim2.new(1, -150, 1, -42)
+    contentFrame.Position = UDim2.new(0, 150, 0, 42)
     contentFrame.BackgroundColor3 = Colors.Content
     contentFrame.BorderSizePixel = 0
     contentFrame.Parent = mainFrame
