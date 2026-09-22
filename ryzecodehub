@@ -15,8 +15,6 @@ local LocalPlayer = Players.LocalPlayer
 -- ============================
 -- LISTA MANUAL DE ALIADOS (TEAM CHECK)
 -- ============================
--- Escribe aquí los nombres EXACTOS de tus compañeros de equipo.
--- Ejemplo: aliados["RyzeCode"] = true
 local aliados = {
     -- ["NombreDeTuAmigo1"] = true,
     -- ["NombreDeTuAmigo2"] = true,
@@ -55,7 +53,7 @@ local Colors = {
 }
 
 -- ============================
--- UTILIDAD: nombres de teclas
+-- UTILIDAD
 -- ============================
 local function keyName(userInputType)
     if userInputType == Enum.UserInputType.MouseButton1 then return "Clic Izquierdo" end
@@ -836,11 +834,16 @@ local healthBars = {}
 
 local instantReloadEnabled = false
 
--- FLY
-local flyEnabled = false
+-- FLY (toggle con tecla)
+local flyEnabled = false       -- Toggle del menú (permite usar la tecla)
+local flyActive = false        -- Toggle de la tecla (pulsar 1 vez ON, otra OFF)
 local flySpeed = 50
 local flyKey = "E"
-local flyActive = false
+
+-- NOCLIP
+local noclipEnabled = false    -- Toggle del menú
+local noclipActive = false     -- Toggle de la tecla
+local noclipKey = "V"
 
 -- ============================
 -- AIM: CONTROLES
@@ -1039,9 +1042,12 @@ MiscTab:CreateToggle({
     Order = 2,
     Callback = function(valor)
         flyEnabled = valor
-        if not valor and LocalPlayer.Character then
-            local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then hrp.Anchored = false end
+        if not valor then
+            flyActive = false
+            if LocalPlayer.Character then
+                local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then hrp.Anchored = false end
+            end
         end
     end
 })
@@ -1063,6 +1069,34 @@ MiscTab:CreateSlider({
     Order = 4,
     Callback = function(valor)
         flySpeed = valor
+    end
+})
+
+MiscTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Order = 5,
+    Callback = function(valor)
+        noclipEnabled = valor
+        if not valor then
+            noclipActive = false
+            if LocalPlayer.Character then
+                for _, parte in ipairs(LocalPlayer.Character:GetDescendants()) do
+                    if parte:IsA("BasePart") and parte.CanCollide then
+                        parte.CanCollide = true
+                    end
+                end
+            end
+        end
+    end
+})
+
+MiscTab:CreateKeybind({
+    Name = "Noclip Key",
+    DefaultKey = "V",
+    Order = 6,
+    Callback = function(nombre, input)
+        noclipKey = nombre
     end
 })
 
@@ -1090,20 +1124,15 @@ local function estaMuerto(personaje)
     return false
 end
 
--- TEAM CHECK MANUAL + ESTÁNDAR
 local function esDelMismoEquipo(jugador)
-    -- 1. Comprobación por lista manual (funciona SIEMPRE)
     if aliados[jugador.Name] then
         return true
     end
-
-    -- 2. Comprobación por equipo estándar (si el juego lo soporta)
     if LocalPlayer.Team and jugador.Team then
         if jugador.Team == LocalPlayer.Team then
             return true
         end
     end
-
     return false
 end
 
@@ -1227,6 +1256,7 @@ addConn(RunService.RenderStepped:Connect(function()
     end
 end))
 
+-- AIM toggle key
 addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     local nombre = keyName(input.UserInputType)
     if input.UserInputType == Enum.UserInputType.Keyboard then
@@ -1282,7 +1312,7 @@ addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     cam.CFrame = cframeOriginal
 end))
 
--- ESP: WALLHACK + SKELETON + HEALTH
+-- ESP
 addConn(RunService.RenderStepped:Connect(function()
     -- WALLHACK
     if wallhackEnabled then
@@ -1563,36 +1593,20 @@ addConn(RunService.RenderStepped:Connect(function()
     end
 end))
 
--- ============================
--- FLY
--- ============================
--- Guardamos la posición original del HRP
-local flyBodyVelocity = nil
-
-local function desactivarFly()
-    if LocalPlayer.Character then
-        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hrp.Anchored = false
-        end
-    end
-end
-
+-- FLY (toggle con tecla)
 addConn(RunService.RenderStepped:Connect(function()
-    if not flyEnabled then
-        return
-    end
+    if not flyEnabled then return end
 
     local personaje = LocalPlayer.Character
     if not personaje then return end
 
     local hrp = personaje:FindFirstChild("HumanoidRootPart")
-    local humanoide = personaje:FindFirstChildOfClass("Humanoid")
-    if not hrp or not humanoide then return end
+    if not hrp then return end
 
-    -- Solo activamos el movimiento si se mantiene la tecla bindeada
     if not flyActive then
-        hrp.Anchored = false
+        if hrp.Anchored then
+            hrp.Anchored = false
+        end
         return
     end
 
@@ -1601,7 +1615,6 @@ addConn(RunService.RenderStepped:Connect(function()
     local cam = workspace.CurrentCamera
     if not cam then return end
 
-    -- Dirección según la cámara
     local direccion = Vector3.new(0, 0, 0)
     local velocidad = flySpeed / 10
 
@@ -1630,28 +1643,48 @@ addConn(RunService.RenderStepped:Connect(function()
     end
 end))
 
--- Detectar la tecla del Fly
+-- Tecla Fly (toggle)
 addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
     local nombre = keyName(input.UserInputType)
     if input.UserInputType == Enum.UserInputType.Keyboard then
         nombre = input.KeyCode.Name
     end
-    if nombre == flyKey then
-        flyActive = true
+    if nombre == flyKey and flyEnabled then
+        flyActive = not flyActive
     end
 end))
 
-addConn(UserInputService.InputEnded:Connect(function(input)
+-- NOCLIP
+addConn(RunService.Stepped:Connect(function()
+    if not noclipActive then return end
+    local personaje = LocalPlayer.Character
+    if not personaje then return end
+    for _, parte in ipairs(personaje:GetDescendants()) do
+        if parte:IsA("BasePart") then
+            parte.CanCollide = false
+        end
+    end
+end))
+
+-- Tecla Noclip (toggle)
+addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
     local nombre = keyName(input.UserInputType)
     if input.UserInputType == Enum.UserInputType.Keyboard then
         nombre = input.KeyCode.Name
     end
-    if nombre == flyKey then
-        flyActive = false
-        -- Al soltar, desanclamos
-        if LocalPlayer.Character then
-            local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then hrp.Anchored = false end
+    if nombre == noclipKey and noclipEnabled then
+        noclipActive = not noclipActive
+        if not noclipActive then
+            local personaje = LocalPlayer.Character
+            if personaje then
+                for _, parte in ipairs(personaje:GetDescendants()) do
+                    if parte:IsA("BasePart") then
+                        parte.CanCollide = true
+                    end
+                end
+            end
         end
     end
 end))
@@ -1683,10 +1716,14 @@ addCleanup(function()
         AutoWindow._fovCircle.Visible = false
     end
 
-    -- Desactivamos el fly
     if LocalPlayer.Character then
         local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if hrp then hrp.Anchored = false end
+        for _, parte in ipairs(LocalPlayer.Character:GetDescendants()) do
+            if parte:IsA("BasePart") then
+                pcall(function() parte.CanCollide = true end)
+            end
+        end
     end
 
     aimbotEnabled = false
@@ -1698,8 +1735,10 @@ addCleanup(function()
     teamCheckEnabled = false
     instantReloadEnabled = false
     flyEnabled = false
-    aimActive = false
     flyActive = false
+    noclipEnabled = false
+    noclipActive = false
+    aimActive = false
     skeletons = {}
     healthBars = {}
 
