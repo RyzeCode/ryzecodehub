@@ -844,7 +844,6 @@ function RyzeCodeHub:CreateWindow(config)
             local buttonCallback = config.ButtonCallback or function() end
             local order = config.Order or 0
 
-            -- Contenedor de la fila
             local row = Instance.new("Frame")
             row.Name = "Row_" .. name
             row.Size = UDim2.new(1, -16, 0, 32)
@@ -854,7 +853,6 @@ function RyzeCodeHub:CreateWindow(config)
             row.LayoutOrder = order
             row.Parent = tabContent
 
-            -- Dropdown (izquierda)
             local dropdown = Instance.new("TextButton")
             dropdown.Name = "Dropdown"
             dropdown.Size = UDim2.new(1, -80, 1, 0)
@@ -893,7 +891,6 @@ function RyzeCodeHub:CreateWindow(config)
             arrow.ZIndex = 10
             arrow.Parent = dropdown
 
-            -- Botón Execute (derecha)
             local execBtn = Instance.new("TextButton")
             execBtn.Name = "Execute"
             execBtn.Size = UDim2.new(0, 70, 1, 0)
@@ -911,7 +908,6 @@ function RyzeCodeHub:CreateWindow(config)
             execCorner.CornerRadius = UDim.new(0, 6)
             execCorner.Parent = execBtn
 
-            -- Lista de opciones (fuera del ScrollingFrame para no ser recortada)
             local optionList = Instance.new("Frame")
             optionList.Name = "OptionList_" .. name
             optionList.Size = UDim2.new(0, dropdown.AbsoluteSize.X, 0, #options * 28)
@@ -976,7 +972,6 @@ function RyzeCodeHub:CreateWindow(config)
                 optionList.Visible = true
             end)
 
-            -- Hover del botón execute
             execBtn.MouseEnter:Connect(function()
                 execBtn.BackgroundColor3 = Colors.ExecuteHover
             end)
@@ -1000,7 +995,6 @@ function RyzeCodeHub:CreateWindow(config)
             local callback = config.Callback or function() end
             local order = config.Order or 0
 
-            -- Contenedor
             local container = Instance.new("Frame")
             container.Name = "ChatBypass"
             container.Size = UDim2.new(1, -16, 0, 90)
@@ -1014,7 +1008,6 @@ function RyzeCodeHub:CreateWindow(config)
             contCorner.CornerRadius = UDim.new(0, 6)
             contCorner.Parent = container
 
-            -- Label
             local label = Instance.new("TextLabel")
             label.Size = UDim2.new(1, -20, 0, 16)
             label.Position = UDim2.new(0, 10, 0, 4)
@@ -1027,7 +1020,6 @@ function RyzeCodeHub:CreateWindow(config)
             label.ZIndex = 9
             label.Parent = container
 
-            -- TextBox
             local textBox = Instance.new("TextBox")
             textBox.Name = "Input"
             textBox.Size = UDim2.new(1, -110, 0, 28)
@@ -1053,7 +1045,6 @@ function RyzeCodeHub:CreateWindow(config)
             tbPadding.PaddingLeft = UDim.new(0, 8)
             tbPadding.Parent = textBox
 
-            -- Botón SEND
             local sendBtn = Instance.new("TextButton")
             sendBtn.Name = "Send"
             sendBtn.Size = UDim2.new(0, 90, 0, 28)
@@ -1078,7 +1069,6 @@ function RyzeCodeHub:CreateWindow(config)
                 sendBtn.BackgroundColor3 = Colors.Execute
             end)
 
-            -- Vista previa
             local preview = Instance.new("TextLabel")
             preview.Name = "Preview"
             preview.Size = UDim2.new(1, -20, 0, 16)
@@ -1103,6 +1093,16 @@ function RyzeCodeHub:CreateWindow(config)
             local function enviar()
                 if textBox.Text == "" then return end
                 local textoBypass = convertirChatBypass(textBox.Text)
+
+                -- Enviar el mensaje al chat de Roblox de verdad
+                local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+                if chatEvent then
+                    local sayMessageRequest = chatEvent:FindFirstChild("SayMessageRequest")
+                    if sayMessageRequest then
+                        sayMessageRequest:FireServer(textoBypass, "All")
+                    end
+                end
+
                 pcall(callback, textoBypass, textBox.Text)
                 textBox.Text = ""
                 preview.Text = ""
@@ -1196,7 +1196,6 @@ local noclipEnabled = false
 local noclipActive = false
 local noclipKey = "V"
 
--- Objetos de vuelo actuales
 local flyHRP = nil
 local flyBV = nil
 local flyBG = nil
@@ -1476,19 +1475,6 @@ MiscTab:CreateChatBypass({
     Callback = function(textoBypass, textoOriginal)
         print("[Ryze.xyz] Original:", textoOriginal)
         print("[Ryze.xyz] Bypass:", textoBypass)
-
-        local chatEvent = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-        if chatEvent then
-            local sayMessageRequest = chatEvent:FindFirstChild("SayMessageRequest")
-            if sayMessageRequest then
-                sayMessageRequest:FireServer(textoBypass, "All")
-                return
-            end
-        end
-
-        pcall(function()
-            game:GetService("Chat"):Chat(LocalPlayer.Character, textoBypass, Enum.ChatColor.White)
-        end)
     end
 })
 
