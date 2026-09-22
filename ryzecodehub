@@ -1062,7 +1062,6 @@ local function hayParedEntre(desde, hasta, ignorarPersonaje)
     return true
 end
 
--- obtenerJugadorCercano con opción de ignorar paredes (magic bullet)
 local function obtenerJugadorCercano(forzarCabeza, ignorarParedes)
     local cam = workspace.CurrentCamera
     if not cam then return nil end
@@ -1083,7 +1082,6 @@ local function obtenerJugadorCercano(forzarCabeza, ignorarParedes)
 
                 local puntoObjetivo = obtenerPuntoObjetivo(personaje, forzarCabeza)
                 if puntoObjetivo then
-                    -- WALL CHECK (solo si NO se está ignorando paredes)
                     if wallCheck and not ignorarParedes then
                         if hayParedEntre(cam.CFrame.Position, puntoObjetivo.Position, personaje) then
                             continue
@@ -1173,13 +1171,7 @@ addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     cam.CFrame = cframeOriginal
 end))
 
--- ============================
--- MAGIC BULLET (dispara al enemigo ignorando paredes)
--- ============================
--- Cuando se activa Magic Bullet, cada vez que disparas:
--- 1. Ignora las paredes al buscar objetivo (pasa ignorarParedes = true)
--- 2. Mueve la cámara al enemigo aunque esté detrás de una pared
--- 3. El servidor recibe el disparo apuntando al enemigo
+-- Magic Bullet
 addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not magicBulletEnabled then return end
     if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
@@ -1187,7 +1179,6 @@ addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     local cam = workspace.CurrentCamera
     if not cam then return end
 
-    -- Buscamos objetivo IGNORANDO paredes
     local objetivo = obtenerJugadorCercano(true, true)
     if not objetivo then return end
 
@@ -1195,13 +1186,14 @@ addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     local cframeObjetivo = CFrame.new(cam.CFrame.Position, objetivo.Position)
     cam.CFrame = cframeObjetivo
 
-    -- 2 frames para asegurar que el servidor recibe el disparo
     RunService.RenderStepped:Wait()
     RunService.RenderStepped:Wait()
     cam.CFrame = cframeOriginal
 end))
 
+-- ============================
 -- ESP: WALLHACK + SKELETON + HEALTH
+-- ============================
 addConn(RunService.RenderStepped:Connect(function()
     -- WALLHACK
     if wallhackEnabled then
@@ -1308,7 +1300,7 @@ addConn(RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- SHOW HEALTH (barra VERTICAL al lado derecho)
+    -- SHOW HEALTH (barra VERTICAL proporcional a la distancia)
     if showHealthEnabled then
         local cam = workspace.CurrentCamera
         if not cam then return end
@@ -1317,34 +1309,30 @@ addConn(RunService.RenderStepped:Connect(function()
             if jugador ~= LocalPlayer and jugador.Character then
                 local personaje = jugador.Character
                 local humanoide = personaje:FindFirstChildOfClass("Humanoid")
-                local cabeza = personaje:FindFirstChild("Head")
                 local hrp = personaje:FindFirstChild("HumanoidRootPart")
                     or personaje:FindFirstChild("UpperTorso")
                     or personaje:FindFirstChild("Torso")
 
-                if humanoide and cabeza and hrp then
+                if humanoide and hrp then
                     local nombreBarra = "HealthBar_" .. jugador.Name
                     local contenedor = healthBars[jugador]
 
+                    -- Crear contenedor la primera vez
                     if not contenedor then
                         contenedor = Instance.new("Frame")
                         contenedor.Name = nombreBarra
-                        contenedor.Size = UDim2.new(0, 12, 0, 60)
                         contenedor.BackgroundTransparency = 1
                         contenedor.BorderSizePixel = 0
                         contenedor.ZIndex = 2
                         contenedor.Parent = espFrame
                         healthBars[jugador] = contenedor
 
-                        -- Texto del porcentaje (encima de la barra)
+                        -- Texto del porcentaje
                         local texto = Instance.new("TextLabel")
                         texto.Name = "Porcentaje"
-                        texto.Size = UDim2.new(0, 40, 0, 14)
-                        texto.Position = UDim2.new(0, -14, 0, -16)
                         texto.BackgroundTransparency = 1
                         texto.Text = "100%"
                         texto.TextColor3 = Colors.TextLight
-                        texto.TextSize = 12
                         texto.Font = Enum.Font.GothamBold
                         texto.TextXAlignment = Enum.TextXAlignment.Center
                         texto.TextStrokeTransparency = 0
@@ -1355,7 +1343,6 @@ addConn(RunService.RenderStepped:Connect(function()
                         -- Fondo de la barra (gris, vertical)
                         local fondo = Instance.new("Frame")
                         fondo.Name = "Fondo"
-                        fondo.Size = UDim2.new(1, 0, 1, 0)
                         fondo.BackgroundColor3 = Colors.HealthBg
                         fondo.BorderSizePixel = 0
                         fondo.ZIndex = 3
@@ -1365,11 +1352,9 @@ addConn(RunService.RenderStepped:Connect(function()
                         fondoCorner.CornerRadius = UDim.new(1, 0)
                         fondoCorner.Parent = fondo
 
-                        -- Relleno (verde, vertical, sube desde abajo)
+                        -- Relleno (verde, sube desde abajo)
                         local relleno = Instance.new("Frame")
                         relleno.Name = "Relleno"
-                        relleno.Size = UDim2.new(1, 0, 1, 0)
-                        relleno.Position = UDim2.new(0, 0, 0, 0)
                         relleno.AnchorPoint = Vector2.new(0, 1)
                         relleno.Position = UDim2.new(0, 0, 1, 0)
                         relleno.BackgroundColor3 = Colors.HealthGreen
@@ -1382,21 +1367,45 @@ addConn(RunService.RenderStepped:Connect(function()
                         rellenoCorner.Parent = relleno
                     end
 
-                    -- Proyectamos la posición del torso a la pantalla
-                    local posPantalla, enPantalla = cam:WorldToViewportPoint(hrp.Position)
-                    if enPantalla and posPantalla.Z > 0 then
-                        contenedor.Visible = true
-                        -- Colocamos la barra al lado derecho del cuerpo
-                        contenedor.Position = UDim2.new(0, posPantalla.X + 30, 0, posPantalla.Y - 30)
+                    -- Proyección de la cabeza y los pies a pantalla
+                    local cabeza = personaje:FindFirstChild("Head") or hrp
+                    local posCabeza, enCabeza = cam:WorldToViewportPoint(cabeza.Position)
+                    local posPies, enPies = cam:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
 
+                    if enCabeza and posCabeza.Z > 0 and enPies and posPies.Z > 0 then
+                        contenedor.Visible = true
+
+                        -- Altura visual del personaje en pantalla (distancia entre pies y cabeza)
+                        local alturaPersonaje = math.abs(posPies.Y - posCabeza.Y)
+                        alturaPersonaje = math.clamp(alturaPersonaje, 20, 300)
+
+                        -- La barra es proporcional a la altura del personaje
+                        local alturaBarra = alturaPersonaje * 0.7
+                        local anchoBarra = math.clamp(alturaPersonaje * 0.06, 3, 8)
+                        local tamanoTexto = math.clamp(alturaPersonaje * 0.2, 8, 16)
+
+                        -- Posicionamos la barra al lado del torso
+                        contenedor.Size = UDim2.new(0, anchoBarra, 0, alturaBarra)
+                        contenedor.Position = UDim2.new(0, posCabeza.X + (anchoBarra * 2 + 5), 0, posCabeza.Y)
+
+                        -- Actualizamos el texto
+                        local texto = contenedor:FindFirstChild("Porcentaje")
+                        if texto then
+                            texto.Size = UDim2.new(0, 40, 0, tamanoTexto)
+                            texto.TextSize = tamanoTexto
+                            texto.Position = UDim2.new(0, -20 + anchoBarra / 2, 0, -tamanoTexto - 3)
+                        end
+
+                        -- Actualizamos la barra
                         local fondo = contenedor:FindFirstChild("Fondo")
                         local relleno = fondo and fondo:FindFirstChild("Relleno")
-                        local texto = contenedor:FindFirstChild("Porcentaje")
 
-                        local vida = math.clamp(humanoide.Health / humanoide.MaxHealth, 0, 1)
+                        if fondo and relleno then
+                            fondo.Size = UDim2.new(1, 0, 1, 0)
 
-                        if relleno then
+                            local vida = math.clamp(humanoide.Health / humanoide.MaxHealth, 0, 1)
                             relleno.Size = UDim2.new(1, 0, vida, 0)
+
                             if vida > 0.6 then
                                 relleno.BackgroundColor3 = Colors.HealthGreen
                             elseif vida > 0.3 then
@@ -1404,10 +1413,10 @@ addConn(RunService.RenderStepped:Connect(function()
                             else
                                 relleno.BackgroundColor3 = Colors.HealthRed
                             end
-                        end
 
-                        if texto then
-                            texto.Text = tostring(math.floor(vida * 100)) .. "%"
+                            if texto then
+                                texto.Text = tostring(math.floor(vida * 100)) .. "%"
+                            end
                         end
                     else
                         contenedor.Visible = false
