@@ -8,25 +8,25 @@ RyzeCodeHub.Version = "1.0.0"
 RyzeCodeHub.Name = "RyzeCodeHub"
 
 -- ============================
--- COLORES (AZUL CLARO)
+-- COLORES (AZUL FUERTE + AZUL MEDIO)
 -- ============================
 local Colors = {
-    Background   = Color3.fromRGB(230, 242, 255),
-    TitleBar     = Color3.fromRGB(100, 170, 255),
-    TabList      = Color3.fromRGB(210, 230, 255),
-    TabActive    = Color3.fromRGB(150, 200, 255),
-    TabInactive  = Color3.fromRGB(210, 230, 255),
-    Content      = Color3.fromRGB(240, 248, 255),
-    Button       = Color3.fromRGB(170, 210, 255),
-    ButtonHover  = Color3.fromRGB(130, 185, 255),
-    TextDark     = Color3.fromRGB(20, 40, 80),
-    TextLight    = Color3.fromRGB(255, 255, 255),
+    Background   = Color3.fromRGB(0, 153, 255),    -- fondo general (azul medio)
+    TitleBar     = Color3.fromRGB(30, 144, 255),   -- barra de título (azul más fuerte)
+    TabList      = Color3.fromRGB(0, 140, 240),    -- lista de pestañas
+    TabActive    = Color3.fromRGB(30, 144, 255),   -- pestaña activa
+    TabInactive  = Color3.fromRGB(0, 120, 220),    -- pestaña inactiva
+    Content      = Color3.fromRGB(0, 153, 255),    -- contenido
+    Button       = Color3.fromRGB(30, 144, 255),   -- botones
+    ButtonHover  = Color3.fromRGB(60, 170, 255),   -- botones al pasar el ratón
+    TextDark     = Color3.fromRGB(255, 255, 255),  -- texto (blanco)
+    TextLight    = Color3.fromRGB(255, 255, 255),  -- texto claro
     Minimize     = Color3.fromRGB(255, 200, 80),
     MinimizeHover= Color3.fromRGB(255, 170, 40),
     Close        = Color3.fromRGB(255, 90, 90),
     CloseHover   = Color3.fromRGB(255, 50, 50),
-    Bubble       = Color3.fromRGB(100, 170, 255),
-    BubbleHover  = Color3.fromRGB(70, 140, 255),
+    Bubble       = Color3.fromRGB(30, 144, 255),
+    BubbleHover  = Color3.fromRGB(60, 170, 255),
 }
 
 -- ============================
@@ -89,7 +89,7 @@ function RyzeCodeHub:CreateWindow(config)
     minimizeBtn.BackgroundColor3 = Colors.Minimize
     minimizeBtn.BorderSizePixel = 0
     minimizeBtn.Text = "—"
-    minimizeBtn.TextColor3 = Colors.TextDark
+    minimizeBtn.TextColor3 = Color3.fromRGB(20, 40, 80)
     minimizeBtn.TextSize = 20
     minimizeBtn.Font = Enum.Font.GothamBold
     minimizeBtn.Parent = titleBar
@@ -294,7 +294,7 @@ function RyzeCodeHub:CreateWindow(config)
             local indicator = Instance.new("Frame")
             indicator.Size = UDim2.new(0, 40, 0, 20)
             indicator.Position = UDim2.new(1, -50, 0.5, -10)
-            indicator.BackgroundColor3 = currentValue and Colors.TitleBar or Color3.fromRGB(180, 180, 190)
+            indicator.BackgroundColor3 = currentValue and Colors.TabActive or Color3.fromRGB(0, 100, 200)
             indicator.BorderSizePixel = 0
             indicator.Parent = toggle
 
@@ -315,7 +315,7 @@ function RyzeCodeHub:CreateWindow(config)
 
             toggle.MouseButton1Click:Connect(function()
                 currentValue = not currentValue
-                indicator.BackgroundColor3 = currentValue and Colors.TitleBar or Color3.fromRGB(180, 180, 190)
+                indicator.BackgroundColor3 = currentValue and Colors.TabActive or Color3.fromRGB(0, 100, 200)
                 circle.Position = currentValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
                 pcall(callback, currentValue)
             end)
