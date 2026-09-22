@@ -38,6 +38,9 @@ local Colors = {
     DropdownBg   = Color3.fromRGB(45, 45, 55),
     DropdownHover= Color3.fromRGB(70, 70, 85),
     Skeleton     = Color3.fromRGB(30, 144, 255),
+    HealthGreen  = Color3.fromRGB(60, 220, 90),
+    HealthRed    = Color3.fromRGB(220, 60, 60),
+    HealthBg     = Color3.fromRGB(40, 40, 45),
 }
 
 -- ============================
@@ -805,7 +808,9 @@ local silentAimEnabled = false
 local espFolder = AutoWindow._espFolder
 local wallhackEnabled = false
 local skeletonEnabled = false
+local showHealthEnabled = false
 local skeletons = {}
+local healthBars = {}
 
 -- Estado MISC
 local instantReloadEnabled = false
@@ -943,6 +948,22 @@ EspTab:CreateToggle({
     end
 })
 
+EspTab:CreateToggle({
+    Name = "Show Health",
+    CurrentValue = false,
+    Callback = function(valor)
+        showHealthEnabled = valor
+        if not valor then
+            for _, hijo in ipairs(espFolder:GetChildren()) do
+                if hijo.Name:sub(1, 13) == "HealthBar_" then
+                    hijo:Destroy()
+                end
+            end
+            healthBars = {}
+        end
+    end
+})
+
 -- ============================
 -- MISC: CONTROLES
 -- ============================
@@ -957,8 +978,6 @@ MiscTab:CreateToggle({
 -- ============================
 -- FUNCIONES DE LÓGICA
 -- ============================
-
--- TARGET DEAD: comprobación mejorada
 local function estaMuerto(personaje)
     if not personaje then return true end
     if not personaje.Parent then return true end
@@ -972,7 +991,6 @@ local function estaMuerto(personaje)
     if estado == Enum.HumanoidStateType.Dead then return true end
     if estado == Enum.HumanoidStateType.None then return true end
 
-    -- Algunos juegos usan un BoolValue "Dead" o "IsDead"
     local flagDead = personaje:FindFirstChild("Dead") or personaje:FindFirstChild("IsDead")
     if flagDead and flagDead:IsA("BoolValue") and flagDead.Value then
         return true
@@ -1037,7 +1055,6 @@ local function obtenerJugadorCercano(forzarCabeza)
         if jugador ~= LocalPlayer then
             local personaje = jugador.Character
             if personaje and personaje.Parent then
-                -- TARGET DEAD: si está muerto y no queremos apuntar a muertos, saltamos
                 if estaMuerto(personaje) and not targetDead then
                     continue
                 end
@@ -1133,15 +1150,13 @@ addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     cam.CFrame = cframeOriginal
 end))
 
--- ESP: WALLHACK + SKELETON
+-- ESP: WALLHACK + SKELETON + HEALTH
 addConn(RunService.RenderStepped:Connect(function()
-    -- WALLHACK (con SelectionBox + Highlight)
+    -- WALLHACK (solo Highlight, sin box)
     if wallhackEnabled then
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
                 local personaje = jugador.Character
-
-                -- Highlight (relleno semitransparente)
                 local hlNombre = "WallhackHL_" .. jugador.Name
                 local hlExistente = espFolder:FindFirstChild(hlNombre)
 
@@ -1158,25 +1173,6 @@ addConn(RunService.RenderStepped:Connect(function()
                 else
                     if hlExistente.Adornee ~= personaje then
                         hlExistente.Adornee = personaje
-                    end
-                end
-
-                -- SelectionBox (caja que se pega al cuerpo, más fiable)
-                local sbNombre = "WallhackSB_" .. jugador.Name
-                local sbExistente = espFolder:FindFirstChild(sbNombre)
-
-                if not sbExistente then
-                    local sb = Instance.new("SelectionBox")
-                    sb.Name = sbNombre
-                    sb.Adornee = personaje
-                    sb.Color3 = Color3.fromRGB(30, 144, 255)
-                    sb.LineThickness = 0.05
-                    sb.Transparency = 0.5
-                    sb.SurfaceTransparency = 1
-                    sb.Parent = espFolder
-                else
-                    if sbExistente.Adornee ~= personaje then
-                        sbExistente.Adornee = personaje
                     end
                 end
             end
@@ -1260,6 +1256,112 @@ addConn(RunService.RenderStepped:Connect(function()
             end
         end
     end
+
+    -- SHOW HEALTH
+    if showHealthEnabled then
+        local cam = workspace.CurrentCamera
+        if not cam then return end
+
+        for _, jugador in ipairs(Players:GetPlayers()) do
+            if jugador ~= LocalPlayer and jugador.Character then
+                local personaje = jugador.Character
+                local humanoide = personaje:FindFirstChildOfClass("Humanoid")
+                local hrp = personaje:FindFirstChild("HumanoidRootPart")
+                    or personaje:FindFirstChild("UpperTorso")
+                    or personaje:FindFirstChild("Torso")
+
+                if humanoide and hrp then
+                    local nombreBarra = "HealthBar_" .. jugador.Name
+                    local contenedorExistente = espFolder:FindFirstChild(nombreBarra)
+
+                    -- Creamos el contenedor si no existe
+                    if not contenedorExistente then
+                        local contenedor = Instance.new("Folder")
+                        contenedor.Name = nombreBarra
+                        contenedor.Parent = espFolder
+
+                        -- Fondo de la barra (gris)
+                        local fondo = Instance.new("Frame")
+                        fondo.Name = "Fondo"
+                        fondo.Size = UDim2.new(0, 100, 0, 6)
+                        fondo.BackgroundColor3 = Colors.HealthBg
+                        fondo.BorderSizePixel = 0
+                        fondo.ZIndex = 1
+                        fondo.Parent = contenedor
+
+                        local fondoCorner = Instance.new("UICorner")
+                        fondoCorner.CornerRadius = UDim.new(1, 0)
+                        fondoCorner.Parent = fondo
+
+                        -- Relleno de la barra (verde)
+                        local relleno = Instance.new("Frame")
+                        relleno.Name = "Relleno"
+                        relleno.Size = UDim2.new(1, 0, 1, 0)
+                        relleno.BackgroundColor3 = Colors.HealthGreen
+                        relleno.BorderSizePixel = 0
+                        relleno.ZIndex = 2
+                        relleno.Parent = fondo
+
+                        local rellenoCorner = Instance.new("UICorner")
+                        rellenoCorner.CornerRadius = UDim.new(1, 0)
+                        rellenoCorner.Parent = relleno
+
+                        -- Texto con el porcentaje
+                        local texto = Instance.new("TextLabel")
+                        texto.Name = "Porcentaje"
+                        texto.Size = UDim2.new(1, 0, 0, 14)
+                        texto.Position = UDim2.new(0, 0, -1, -2)
+                        texto.BackgroundTransparency = 1
+                        texto.Text = "100%"
+                        texto.TextColor3 = Colors.TextLight
+                        texto.TextSize = 12
+                        texto.Font = Enum.Font.GothamBold
+                        texto.TextStrokeTransparency = 0
+                        texto.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                        texto.ZIndex = 3
+                        texto.Parent = contenedor
+
+                        healthBars[jugador] = contenedor
+                    end
+
+                    -- Actualizamos la posición y el valor
+                    local contenedor = healthBars[jugador] or espFolder:FindFirstChild(nombreBarra)
+                    if contenedor then
+                        local fondo = contenedor:FindFirstChild("Fondo")
+                        local relleno = fondo and fondo:FindFirstChild("Relleno")
+                        local texto = contenedor:FindFirstChild("Porcentaje")
+
+                        -- Proyectamos la posición de la cabeza a la pantalla
+                        local cabeza = personaje:FindFirstChild("Head") or hrp
+                        local posPantalla, enPantalla = cam:WorldToViewportPoint(cabeza.Position)
+
+                        if enPantalla and posPantalla.Z > 0 then
+                            contenedor.Enabled = true
+                            -- Colocamos la barra a la derecha de la cabeza
+                            fondo.Position = UDim2.new(0, posPantalla.X + 30, 0, posPantalla.Y - 10)
+                            texto.Position = UDim2.new(0, posPantalla.X + 30, 0, posPantalla.Y - 26)
+
+                            -- Actualizamos el relleno según la vida
+                            local vida = math.clamp(humanoide.Health / humanoide.MaxHealth, 0, 1)
+                            relleno.Size = UDim2.new(vida, 0, 1, 0)
+
+                            -- Cambiamos de color según la vida
+                            if vida > 0.6 then
+                                relleno.BackgroundColor3 = Colors.HealthGreen
+                            elseif vida > 0.3 then
+                                relleno.BackgroundColor3 = Color3.fromRGB(255, 200, 60)
+                            else
+                                relleno.BackgroundColor3 = Colors.HealthRed
+                            end
+
+                            -- Actualizamos el texto
+                            texto.Text = tostring(math.floor(vida * 100)) .. "%"
+                        end
+                    end
+                end
+            end
+        end
+    end
 end))
 
 -- ============================
@@ -1271,15 +1373,12 @@ addConn(RunService.RenderStepped:Connect(function()
     local personaje = LocalPlayer.Character
     if not personaje then return end
 
-    -- Buscamos herramientas equipadas
     for _, hijo in ipairs(personaje:GetChildren()) do
         if hijo:IsA("Tool") then
-            -- 1. Rellenar valores de munición
             for _, valor in ipairs(hijo:GetDescendants()) do
                 if valor:IsA("IntValue") or valor:IsA("NumberValue") then
                     local nombreLower = string.lower(valor.Name)
                     if nombreLower:find("ammo") or nombreLower:find("bullet") or nombreLower:find("mag") then
-                        -- Si es la munición actual, la igualamos al máximo
                         local maxAmmo = hijo:FindFirstChild("MaxAmmo") or hijo:FindFirstChild("AmmoMax")
                         if maxAmmo and maxAmmo:IsA("IntValue") and maxAmmo ~= valor then
                             valor.Value = maxAmmo.Value
@@ -1290,7 +1389,6 @@ addConn(RunService.RenderStepped:Connect(function()
                 end
             end
 
-            -- 2. Acelerar animaciones de recarga
             local animator = personaje:FindFirstChildOfClass("Animator")
                 or (personaje:FindFirstChild("Humanoid") and personaje.Humanoid:FindFirstChildOfClass("Animator"))
             if animator then
@@ -1308,10 +1406,11 @@ end))
 addConn(Players.PlayerRemoving:Connect(function(jugador)
     local hl = espFolder:FindFirstChild("WallhackHL_" .. jugador.Name)
     if hl then hl:Destroy() end
-    local sb = espFolder:FindFirstChild("WallhackSB_" .. jugador.Name)
-    if sb then sb:Destroy() end
     local sk = espFolder:FindFirstChild("Skeleton_" .. jugador.Name)
     if sk then sk:Destroy() end
+    local hb = espFolder:FindFirstChild("HealthBar_" .. jugador.Name)
+    if hb then hb:Destroy() end
+    healthBars[jugador] = nil
 end))
 
 -- ============================
@@ -1335,9 +1434,11 @@ addCleanup(function()
     silentAimEnabled = false
     wallhackEnabled = false
     skeletonEnabled = false
-    aimActive = false
+    showHealthEnabled = false
     instantReloadEnabled = false
+    aimActive = false
     skeletons = {}
+    healthBars = {}
 
     print("[Ryze.xyz] Todo desactivado correctamente ✅")
 end)
