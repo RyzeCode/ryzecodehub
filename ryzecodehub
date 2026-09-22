@@ -109,7 +109,7 @@ function RyzeCodeHub:CreateWindow(config)
     closeBtn.Font = Enum.Font.GothamBold
     closeBtn.Parent = titleBar
 
-    -- Línea negra entre la barra azul y el resto
+    -- Línea negra horizontal (bajo la barra de título)
     local divider = Instance.new("Frame")
     divider.Name = "Divider"
     divider.Size = UDim2.new(1, 0, 0, 2)
@@ -128,10 +128,21 @@ function RyzeCodeHub:CreateWindow(config)
     tabList.BorderSizePixel = 0
     tabList.Parent = mainFrame
 
+    -- Línea negra vertical (separación entre pestañas y contenido)
+    local verticalDivider = Instance.new("Frame")
+    verticalDivider.Name = "VerticalDivider"
+    verticalDivider.Size = UDim2.new(0, 2, 1, -42)
+    verticalDivider.Position = UDim2.new(0, 150, 0, 42)
+    verticalDivider.BackgroundColor3 = Colors.Border
+    verticalDivider.BorderSizePixel = 0
+    verticalDivider.ZIndex = 2
+    verticalDivider.Parent = mainFrame
+
+    -- Contenido (a la derecha)
     local contentFrame = Instance.new("Frame")
     contentFrame.Name = "ContentFrame"
-    contentFrame.Size = UDim2.new(1, -150, 1, -42)
-    contentFrame.Position = UDim2.new(0, 150, 0, 42)
+    contentFrame.Size = UDim2.new(1, -152, 1, -42)
+    contentFrame.Position = UDim2.new(0, 152, 0, 42)
     contentFrame.BackgroundColor3 = Colors.Content
     contentFrame.BorderSizePixel = 0
     contentFrame.Parent = mainFrame
@@ -366,7 +377,5 @@ end
 -- ============================
 local AutoWindow = RyzeCodeHub:CreateWindow({ Name = "Ryze.xyz" })
 local AutoTab = AutoWindow:CreateTab("AIM")
-
--- (Aquí irán tus funciones de AIM más adelante)
 
 return RyzeCodeHub
