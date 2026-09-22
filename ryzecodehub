@@ -1,18 +1,367 @@
+-- RyzeCodeHub.lua
+-- Librería de UI personal
+-- Autor: Ryze
+
+local RyzeCodeHub = {}
+
+RyzeCodeHub.Version = "1.0.0"
+RyzeCodeHub.Name = "RyzeCodeHub"
+
+-- ============================
+-- COLORES (GRIS OSCURO + BARRA AZUL)
+-- ============================
 local Colors = {
     Background   = Color3.fromRGB(35, 35, 40),     -- fondo general (gris oscuro)
-    TitleBar     = Color3.fromRGB(30, 144, 255),   -- barra de título (azul, se queda)
-    TabList      = Color3.fromRGB(28, 28, 32),     -- lista de pestañas (gris más oscuro)
-    TabActive    = Color3.fromRGB(55, 55, 65),     -- pestaña activa (gris medio)
+    TitleBar     = Color3.fromRGB(30, 144, 255),   -- barra de título (azul)
+    TabList      = Color3.fromRGB(28, 28, 32),     -- lista de pestañas
+    TabActive    = Color3.fromRGB(55, 55, 65),     -- pestaña activa
     TabInactive  = Color3.fromRGB(28, 28, 32),     -- pestaña inactiva
-    Content      = Color3.fromRGB(35, 35, 40),     -- contenido (gris oscuro)
-    Button       = Color3.fromRGB(50, 50, 60),     -- botones (gris)
+    Content      = Color3.fromRGB(35, 35, 40),     -- contenido
+    Button       = Color3.fromRGB(50, 50, 60),     -- botones
     ButtonHover  = Color3.fromRGB(70, 70, 85),     -- botones al pasar el ratón
-    TextDark     = Color3.fromRGB(230, 230, 240),  -- texto (gris muy claro, casi blanco)
+    TextDark     = Color3.fromRGB(230, 230, 240),  -- texto
     TextLight    = Color3.fromRGB(255, 255, 255),  -- texto claro
-    Minimize     = Color3.fromRGB(255, 200, 80),   -- botón minimizar (amarillo)
+    Minimize     = Color3.fromRGB(255, 200, 80),
     MinimizeHover= Color3.fromRGB(255, 170, 40),
-    Close        = Color3.fromRGB(255, 90, 90),    -- botón cerrar (rojo)
+    Close        = Color3.fromRGB(255, 90, 90),
     CloseHover   = Color3.fromRGB(255, 50, 50),
-    Bubble       = Color3.fromRGB(30, 144, 255),   -- bola "R" (azul)
+    Bubble       = Color3.fromRGB(30, 144, 255),
     BubbleHover  = Color3.fromRGB(60, 170, 255),
 }
+
+-- ============================
+-- CREAR VENTANA
+-- ============================
+function RyzeCodeHub:CreateWindow(config)
+    config = config or {}
+    local windowName = config.Name or "RyzeCodeHub"
+
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "RyzeCodeHub_UI"
+    screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.Parent = game.CoreGui
+
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 600, 0, 400)
+    mainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
+    mainFrame.BackgroundColor3 = Colors.Background
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Active = true
+    mainFrame.Draggable = true
+    mainFrame.ClipsDescendants = true
+    mainFrame.Visible = true
+    mainFrame.Parent = screenGui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = mainFrame
+
+    local titleBar = Instance.new("Frame")
+    titleBar.Name = "TitleBar"
+    titleBar.Size = UDim2.new(1, 0, 0, 40)
+    titleBar.BackgroundColor3 = Colors.TitleBar
+    titleBar.BorderSizePixel = 0
+    titleBar.Parent = mainFrame
+
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 8)
+    titleCorner.Parent = titleBar
+
+    local title = Instance.new("TextLabel")
+    title.Name = "Title"
+    title.Size = UDim2.new(1, -100, 1, 0)
+    title.BackgroundTransparency = 1
+    title.Text = windowName
+    title.TextColor3 = Colors.TextLight
+    title.TextSize = 18
+    title.Font = Enum.Font.GothamBold
+    title.Parent = titleBar
+
+    local minimizeBtn = Instance.new("TextButton")
+    minimizeBtn.Name = "MinimizeBtn"
+    minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+    minimizeBtn.Position = UDim2.new(1, -70, 0.5, -15)
+    minimizeBtn.BackgroundColor3 = Colors.Minimize
+    minimizeBtn.BorderSizePixel = 0
+    minimizeBtn.Text = "—"
+    minimizeBtn.TextColor3 = Color3.fromRGB(20, 40, 80)
+    minimizeBtn.TextSize = 20
+    minimizeBtn.Font = Enum.Font.GothamBold
+    minimizeBtn.Parent = titleBar
+
+    local minCorner = Instance.new("UICorner")
+    minCorner.CornerRadius = UDim.new(0, 6)
+    minCorner.Parent = minimizeBtn
+
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Name = "CloseBtn"
+    closeBtn.Size = UDim2.new(0, 30, 0, 30)
+    closeBtn.Position = UDim2.new(1, -35, 0.5, -15)
+    closeBtn.BackgroundColor3 = Colors.Close
+    closeBtn.BorderSizePixel = 0
+    closeBtn.Text = "✕"
+    closeBtn.TextColor3 = Colors.TextLight
+    closeBtn.TextSize = 18
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.Parent = titleBar
+
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 6)
+    closeCorner.Parent = closeBtn
+
+    local tabList = Instance.new("Frame")
+    tabList.Name = "TabList"
+    tabList.Size = UDim2.new(0, 150, 1, -40)
+    tabList.Position = UDim2.new(0, 0, 0, 40)
+    tabList.BackgroundColor3 = Colors.TabList
+    tabList.BorderSizePixel = 0
+    tabList.Parent = mainFrame
+
+    local contentFrame = Instance.new("Frame")
+    contentFrame.Name = "ContentFrame"
+    contentFrame.Size = UDim2.new(1, -150, 1, -40)
+    contentFrame.Position = UDim2.new(0, 150, 0, 40)
+    contentFrame.BackgroundColor3 = Colors.Content
+    contentFrame.BorderSizePixel = 0
+    contentFrame.Parent = mainFrame
+
+    local bubble = Instance.new("TextButton")
+    bubble.Name = "Bubble"
+    bubble.Size = UDim2.new(0, 60, 0, 60)
+    bubble.Position = UDim2.new(0.5, -30, 0.5, -30)
+    bubble.BackgroundColor3 = Colors.Bubble
+    bubble.BorderSizePixel = 0
+    bubble.Text = "R"
+    bubble.TextColor3 = Colors.TextLight
+    bubble.TextSize = 32
+    bubble.Font = Enum.Font.GothamBold
+    bubble.Visible = false
+    bubble.Active = true
+    bubble.Draggable = true
+    bubble.Parent = screenGui
+
+    local bubbleCorner = Instance.new("UICorner")
+    bubbleCorner.CornerRadius = UDim.new(1, 0)
+    bubbleCorner.Parent = bubble
+
+    bubble.MouseEnter:Connect(function()
+        bubble.BackgroundColor3 = Colors.BubbleHover
+    end)
+    bubble.MouseLeave:Connect(function()
+        bubble.BackgroundColor3 = Colors.Bubble
+    end)
+    bubble.MouseButton1Click:Connect(function()
+        bubble.Visible = false
+        mainFrame.Visible = true
+    end)
+
+    minimizeBtn.MouseEnter:Connect(function()
+        minimizeBtn.BackgroundColor3 = Colors.MinimizeHover
+    end)
+    minimizeBtn.MouseLeave:Connect(function()
+        minimizeBtn.BackgroundColor3 = Colors.Minimize
+    end)
+    minimizeBtn.MouseButton1Click:Connect(function()
+        mainFrame.Visible = false
+        bubble.Visible = true
+    end)
+
+    closeBtn.MouseEnter:Connect(function()
+        closeBtn.BackgroundColor3 = Colors.CloseHover
+    end)
+    closeBtn.MouseLeave:Connect(function()
+        closeBtn.BackgroundColor3 = Colors.Close
+    end)
+    closeBtn.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
+
+    local Window = {}
+    local tabs = {}
+
+    function Window:CreateTab(tabName, icon)
+        tabName = tabName or "Tab"
+
+        local tabButton = Instance.new("TextButton")
+        tabButton.Name = "Tab_" .. tabName
+        tabButton.Size = UDim2.new(1, 0, 0, 35)
+        tabButton.Position = UDim2.new(0, 0, 0, #tabs * 35)
+        tabButton.BackgroundColor3 = Colors.TabInactive
+        tabButton.BorderSizePixel = 0
+        tabButton.Text = tabName
+        tabButton.TextColor3 = Colors.TextDark
+        tabButton.TextSize = 14
+        tabButton.Font = Enum.Font.Gotham
+        tabButton.Parent = tabList
+
+        local tabContent = Instance.new("ScrollingFrame")
+        tabContent.Name = "Content_" .. tabName
+        tabContent.Size = UDim2.new(1, 0, 1, 0)
+        tabContent.BackgroundTransparency = 1
+        tabContent.BorderSizePixel = 0
+        tabContent.ScrollBarThickness = 4
+        tabContent.CanvasSize = UDim2.new(0, 0, 0, 0)
+        tabContent.Visible = false
+        tabContent.Parent = contentFrame
+
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0, 6)
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Parent = tabContent
+
+        local padding = Instance.new("UIPadding")
+        padding.PaddingTop = UDim.new(0, 8)
+        padding.PaddingLeft = UDim.new(0, 8)
+        padding.PaddingRight = UDim.new(0, 8)
+        padding.Parent = tabContent
+
+        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            tabContent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
+        end)
+
+        local Tab = {}
+
+        function Tab:CreateButton(buttonConfig)
+            buttonConfig = buttonConfig or {}
+            local buttonName = buttonConfig.Name or "Button"
+            local callback = buttonConfig.Callback or function() end
+
+            local button = Instance.new("TextButton")
+            button.Name = "Button_" .. buttonName
+            button.Size = UDim2.new(1, -16, 0, 32)
+            button.BackgroundColor3 = Colors.Button
+            button.BorderSizePixel = 0
+            button.Text = buttonName
+            button.TextColor3 = Colors.TextDark
+            button.TextSize = 14
+            button.Font = Enum.Font.Gotham
+            button.Parent = tabContent
+
+            local btnCorner = Instance.new("UICorner")
+            btnCorner.CornerRadius = UDim.new(0, 6)
+            btnCorner.Parent = button
+
+            button.MouseEnter:Connect(function()
+                button.BackgroundColor3 = Colors.ButtonHover
+            end)
+            button.MouseLeave:Connect(function()
+                button.BackgroundColor3 = Colors.Button
+            end)
+            button.MouseButton1Click:Connect(function()
+                pcall(callback)
+            end)
+
+            return button
+        end
+
+        function Tab:CreateToggle(toggleConfig)
+            toggleConfig = toggleConfig or {}
+            local toggleName = toggleConfig.Name or "Toggle"
+            local currentValue = toggleConfig.CurrentValue or false
+            local callback = toggleConfig.Callback or function() end
+
+            local toggle = Instance.new("TextButton")
+            toggle.Name = "Toggle_" .. toggleName
+            toggle.Size = UDim2.new(1, -16, 0, 32)
+            toggle.BackgroundColor3 = Colors.Button
+            toggle.BorderSizePixel = 0
+            toggle.Text = toggleName
+            toggle.TextColor3 = Colors.TextDark
+            toggle.TextSize = 14
+            toggle.Font = Enum.Font.Gotham
+            toggle.TextXAlignment = Enum.TextXAlignment.Left
+            toggle.Parent = tabContent
+
+            local toggleCorner = Instance.new("UICorner")
+            toggleCorner.CornerRadius = UDim.new(0, 6)
+            toggleCorner.Parent = toggle
+
+            local paddingText = Instance.new("UIPadding")
+            paddingText.PaddingLeft = UDim.new(0, 10)
+            paddingText.Parent = toggle
+
+            local indicator = Instance.new("Frame")
+            indicator.Size = UDim2.new(0, 40, 0, 20)
+            indicator.Position = UDim2.new(1, -50, 0.5, -10)
+            indicator.BackgroundColor3 = currentValue and Colors.TitleBar or Color3.fromRGB(80, 80, 90)
+            indicator.BorderSizePixel = 0
+            indicator.Parent = toggle
+
+            local indCorner = Instance.new("UICorner")
+            indCorner.CornerRadius = UDim.new(1, 0)
+            indCorner.Parent = indicator
+
+            local circle = Instance.new("Frame")
+            circle.Size = UDim2.new(0, 16, 0, 16)
+            circle.Position = currentValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+            circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            circle.BorderSizePixel = 0
+            circle.Parent = indicator
+
+            local circleCorner = Instance.new("UICorner")
+            circleCorner.CornerRadius = UDim.new(1, 0)
+            circleCorner.Parent = circle
+
+            toggle.MouseButton1Click:Connect(function()
+                currentValue = not currentValue
+                indicator.BackgroundColor3 = currentValue and Colors.TitleBar or Color3.fromRGB(80, 80, 90)
+                circle.Position = currentValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+                pcall(callback, currentValue)
+            end)
+
+            return toggle
+        end
+
+        tabs[#tabs + 1] = { Button = tabButton, Content = tabContent }
+
+        tabButton.MouseButton1Click:Connect(function()
+            for _, t in ipairs(tabs) do
+                t.Content.Visible = false
+                t.Button.BackgroundColor3 = Colors.TabInactive
+                t.Button.TextColor3 = Colors.TextDark
+            end
+            tabContent.Visible = true
+            tabButton.BackgroundColor3 = Colors.TabActive
+            tabButton.TextColor3 = Colors.TextDark
+        end)
+
+        if #tabs == 1 then
+            tabContent.Visible = true
+            tabButton.BackgroundColor3 = Colors.TabActive
+            tabButton.TextColor3 = Colors.TextDark
+        end
+
+        return Tab
+    end
+
+    function Window:Destroy()
+        screenGui:Destroy()
+    end
+
+    return Window
+end
+
+-- ============================
+-- AUTO-SETUP
+-- ============================
+local AutoWindow = RyzeCodeHub:CreateWindow({ Name = "RyzeCodeHub" })
+local AutoTab = AutoWindow:CreateTab("Troll Scripts")
+
+AutoTab:CreateButton({
+    Name = "Ejemplo",
+    Callback = function()
+        print("[RyzeCodeHub] Botón pulsado ✅")
+    end
+})
+
+AutoTab:CreateToggle({
+    Name = "Ejemplo Toggle",
+    CurrentValue = false,
+    Callback = function(v)
+        print("[RyzeCodeHub] Toggle:", v)
+    end
+})
+
+return RyzeCodeHub
