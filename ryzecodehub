@@ -89,7 +89,6 @@ function RyzeCodeHub:CreateWindow(config)
     border.Thickness = 2
     border.Parent = mainFrame
 
-    -- Barra de título
     local titleBar = Instance.new("Frame")
     titleBar.Name = "TitleBar"
     titleBar.Size = UDim2.new(1, 0, 0, 40)
@@ -136,7 +135,6 @@ function RyzeCodeHub:CreateWindow(config)
     closeBtn.ZIndex = 7
     closeBtn.Parent = titleBar
 
-    -- Línea horizontal
     local divider = Instance.new("Frame")
     divider.Size = UDim2.new(1, 0, 0, 2)
     divider.Position = UDim2.new(0, 0, 0, 40)
@@ -145,7 +143,6 @@ function RyzeCodeHub:CreateWindow(config)
     divider.ZIndex = 6
     divider.Parent = mainFrame
 
-    -- Lista de pestañas
     local tabList = Instance.new("Frame")
     tabList.Name = "TabList"
     tabList.Size = UDim2.new(0, 150, 1, -42)
@@ -155,7 +152,6 @@ function RyzeCodeHub:CreateWindow(config)
     tabList.ZIndex = 6
     tabList.Parent = mainFrame
 
-    -- Línea vertical
     local verticalDivider = Instance.new("Frame")
     verticalDivider.Size = UDim2.new(0, 2, 1, -42)
     verticalDivider.Position = UDim2.new(0, 150, 0, 42)
@@ -164,7 +160,6 @@ function RyzeCodeHub:CreateWindow(config)
     verticalDivider.ZIndex = 6
     verticalDivider.Parent = mainFrame
 
-    -- Contenido
     local contentFrame = Instance.new("Frame")
     contentFrame.Name = "ContentFrame"
     contentFrame.Size = UDim2.new(1, -152, 1, -42)
@@ -175,7 +170,6 @@ function RyzeCodeHub:CreateWindow(config)
     contentFrame.ZIndex = 6
     contentFrame.Parent = mainFrame
 
-    -- Bola flotante
     local bubble = Instance.new("TextButton")
     bubble.Size = UDim2.new(0, 60, 0, 60)
     bubble.Position = UDim2.new(0.5, -30, 0.5, -30)
@@ -258,7 +252,7 @@ function RyzeCodeHub:CreateWindow(config)
         fovCircle.Size = UDim2.new(0, diametro, 0, diametro)
     end
 
-    -- Capa para ESP (encima de todo menos UI)
+    -- ScreenGui para ESP
     local espGui = Instance.new("ScreenGui")
     espGui.Name = "Ryze_ESP"
     espGui.ResetOnSpawn = false
@@ -270,7 +264,6 @@ function RyzeCodeHub:CreateWindow(config)
     espFolder.Name = "ESP"
     espFolder.Parent = espGui
 
-    -- Frame contenedor para líneas (sin layout)
     local Window = {}
     local tabs = {}
 
@@ -507,7 +500,6 @@ function RyzeCodeHub:CreateWindow(config)
             return container
         end
 
-        -- DROPDOWN que se abre HACIA ARRIBA si no cabe
         function Tab:CreateDropdown(dropdownConfig)
             dropdownConfig = dropdownConfig or {}
             local dropdownName = dropdownConfig.Name or "Dropdown"
@@ -551,7 +543,6 @@ function RyzeCodeHub:CreateWindow(config)
             arrow.ZIndex = 9
             arrow.Parent = container
 
-            -- Lista de opciones (creada en ScreenGui para que no la recorte el ScrollingFrame)
             local optionList = Instance.new("Frame")
             optionList.Name = "OptionList_" .. dropdownName
             optionList.Size = UDim2.new(0, container.AbsoluteSize.X, 0, #options * 28)
@@ -600,7 +591,6 @@ function RyzeCodeHub:CreateWindow(config)
                     return
                 end
 
-                -- Calcular posición
                 local absPos = container.AbsolutePosition
                 local absSize = container.AbsoluteSize
                 local listHeight = #options * 28
@@ -608,7 +598,6 @@ function RyzeCodeHub:CreateWindow(config)
 
                 optionList.Size = UDim2.new(0, absSize.X, 0, listHeight)
 
-                -- ¿Cabe hacia abajo?
                 if absPos.Y + absSize.Y + listHeight < screenHeight then
                     optionList.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 4)
                 else
@@ -728,6 +717,7 @@ local toggleKey = "F"
 local aimActive = false
 local boneAim = "HEAD"
 local targetDead = false
+local smoothValue = 50
 
 -- Estado ESP
 local espFolder = AutoWindow._espFolder
@@ -756,6 +746,17 @@ AimTab:CreateSlider({
         if AutoWindow._actualizarFovCircle then
             AutoWindow._actualizarFovCircle(valor)
         end
+    end
+})
+
+AimTab:CreateSlider({
+    Name = "SMOOTH",
+    Min = 0,
+    Max = 100,
+    CurrentValue = 50,
+    Callback = function(valor)
+        smoothValue = valor
+        print("[Ryze.xyz] SMOOTH:", valor)
     end
 })
 
@@ -894,7 +895,7 @@ local function obtenerJugadorCercano()
     return mejorObjetivo
 end
 
--- Aimbot con lerp más agresivo para que sea fluido y preciso
+-- Aimbot con SMOOTH
 RunService.RenderStepped:Connect(function()
     if not aimbotEnabled or not aimActive then return end
 
@@ -903,8 +904,13 @@ RunService.RenderStepped:Connect(function()
 
     local objetivo = obtenerJugadorCercano()
     if objetivo then
+        -- SMOOTH 0 = descarado (factor 1)
+        -- SMOOTH 100 = muy suave (factor 0.03)
+        local factor = 1 - (smoothValue / 100)
+        factor = math.clamp(factor, 0.03, 1)
+
         local targetCFrame = CFrame.new(cam.CFrame.Position, objetivo.Position)
-        cam.CFrame = cam.CFrame:Lerp(targetCFrame, 0.5)
+        cam.CFrame = cam.CFrame:Lerp(targetCFrame, factor)
     end
 end)
 
@@ -942,7 +948,6 @@ local function crearHighlight(personaje)
     hl.Parent = espFolder
 end
 
--- Creamos el esqueleto con Frames (más fiable que Line)
 local function crearEsqueleto(personaje)
     local nombre = "Skeleton_" .. personaje.Name
     if espFolder:FindFirstChild(nombre) then
@@ -953,7 +958,6 @@ local function crearEsqueleto(personaje)
     carpeta.Name = nombre
     carpeta.Parent = espFolder
 
-    -- Creamos 15 frames finitos (uno por cada conexión)
     local lineas = {}
     for i = 1, 15 do
         local linea = Instance.new("Frame")
@@ -971,9 +975,7 @@ local function crearEsqueleto(personaje)
     return carpeta
 end
 
--- Conexiones R15 y R6
 local conexiones = {
-    -- R15
     {"Head", "UpperTorso"},
     {"UpperTorso", "LowerTorso"},
     {"LowerTorso", "LeftUpperLeg"},
@@ -984,7 +986,6 @@ local conexiones = {
     {"UpperTorso", "RightUpperArm"},
     {"LeftUpperArm", "LeftLowerArm"},
     {"RightUpperArm", "RightLowerArm"},
-    -- R6
     {"Head", "Torso"},
     {"Torso", "Left Leg"},
     {"Torso", "Right Leg"},
@@ -992,7 +993,6 @@ local conexiones = {
     {"Torso", "Right Arm"},
 }
 
--- Función para dibujar una línea con Frame rotado
 local function dibujarLinea(linea, posA, posB)
     local delta = posB - posA
     local distancia = delta.Magnitude
@@ -1011,7 +1011,6 @@ local function dibujarLinea(linea, posA, posB)
 end
 
 RunService.RenderStepped:Connect(function()
-    -- WALLHACK
     if wallhackEnabled then
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
@@ -1020,7 +1019,6 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- SKELETON
     if skeletonEnabled then
         local cam = workspace.CurrentCamera
         if not cam then return end
@@ -1058,7 +1056,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Limpieza al salir
 Players.PlayerRemoving:Connect(function(jugador)
     local hl = espFolder:FindFirstChild("WallhackHL_" .. jugador.Name)
     if hl then hl:Destroy() end
