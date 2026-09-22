@@ -170,9 +170,14 @@ function RyzeCodeHub:CreateWindow(config)
     contentFrame.ZIndex = 6
     contentFrame.Parent = mainFrame
 
+    -- ============================
+    -- BOLA FLOTANTE (arriba, no centro)
+    -- ============================
     local bubble = Instance.new("TextButton")
+    bubble.Name = "Bubble"
     bubble.Size = UDim2.new(0, 60, 0, 60)
-    bubble.Position = UDim2.new(0.5, -30, 0.5, -30)
+    bubble.Position = UDim2.new(0.5, -30, 0, 10)  -- Arriba de la pantalla
+    bubble.AnchorPoint = Vector2.new(0, 0)
     bubble.BackgroundColor3 = Colors.Bubble
     bubble.BorderSizePixel = 0
     bubble.Text = "R"
@@ -193,15 +198,61 @@ function RyzeCodeHub:CreateWindow(config)
     bubbleBorder.Thickness = 2
     bubbleBorder.Parent = bubble
 
+    -- Variables para detectar arrastre vs clic
+    local bubbleDragging = false
+    local bubbleStartPos = nil
+    local bubbleStartMouse = nil
+
     bubble.MouseEnter:Connect(function()
         bubble.BackgroundColor3 = Colors.BubbleHover
     end)
     bubble.MouseLeave:Connect(function()
         bubble.BackgroundColor3 = Colors.Bubble
     end)
-    bubble.MouseButton1Click:Connect(function()
-        bubble.Visible = false
-        mainFrame.Visible = true
+
+    -- Al empezar a pulsar la bola
+    bubble.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            bubbleDragging = true
+            bubbleStartPos = bubble.Position
+            bubbleStartMouse = input.Position
+        end
+    end)
+
+    -- Al mover el ratón mientras pulsas
+    UserInputService.InputChanged:Connect(function(input)
+        if not bubbleDragging then return end
+        if input.UserInputType ~= Enum.UserInputType.MouseMovement
+        and input.UserInputType ~= Enum.UserInputType.Touch then
+            return
+        end
+
+        local delta = input.Position - bubbleStartMouse
+        -- Si se ha movido más de 5 píxeles, consideramos que es arrastre
+        if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
+            bubble.Position = UDim2.new(
+                bubbleStartPos.X.Scale, bubbleStartPos.X.Offset + delta.X,
+                bubbleStartPos.Y.Scale, bubbleStartPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    -- Al soltar el ratón
+    bubble.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            local delta = input.Position - bubbleStartMouse
+            local seMovio = math.abs(delta.X) > 5 or math.abs(delta.Y) > 5
+
+            bubbleDragging = false
+
+            -- Solo abrimos el menú si NO se movió
+            if not seMovio then
+                bubble.Visible = false
+                mainFrame.Visible = true
+            end
+        end
     end)
 
     minimizeBtn.MouseEnter:Connect(function()
@@ -859,7 +910,6 @@ local function obtenerPuntoObjetivo(personaje)
         or personaje:FindFirstChild("Torso")
 end
 
--- Raycast para wall check
 local function hayParedEntre(desde, hasta, ignorarPersonaje)
     local rayParams = RaycastParams.new()
     rayParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -898,7 +948,6 @@ local function obtenerJugadorCercano()
 
                     local puntoObjetivo = obtenerPuntoObjetivo(personaje)
                     if puntoObjetivo then
-                        -- WALL CHECK: si está activado y hay pared, saltamos
                         if wallCheck then
                             if hayParedEntre(cam.CFrame.Position, puntoObjetivo.Position, personaje) then
                                 continue
@@ -927,7 +976,6 @@ local function obtenerJugadorCercano()
     return mejorObjetivo
 end
 
--- Aimbot con SMOOTH
 RunService.RenderStepped:Connect(function()
     if not aimbotEnabled or not aimActive then return end
 
