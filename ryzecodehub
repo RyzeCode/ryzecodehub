@@ -13,6 +13,13 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================
+-- IDs DE IMÁGENES (rellena esto)
+-- ============================
+-- 1. Sube las imágenes a Roblox y pon los IDs aquí (solo el número, sin rbxassetid://)
+local ID_LOGO_R = 0          -- <- Pon aquí el ID de la imagen de la R metálica
+local ID_FONDO_TITLEBAR = 0  -- <- Pon aquí el ID de la imagen del fondo gris metálico
+
+-- ============================
 -- COLORES
 -- ============================
 local Colors = {
@@ -101,6 +108,23 @@ function RyzeCodeHub:CreateWindow(config)
     titleBar.ZIndex = 6
     titleBar.Parent = mainFrame
 
+    -- Imagen del fondo de la barra de título (si hay ID)
+    if ID_FONDO_TITLEBAR and ID_FONDO_TITLEBAR ~= 0 then
+        local fondoImagen = Instance.new("ImageLabel")
+        fondoImagen.Name = "FondoTitulo"
+        fondoImagen.Size = UDim2.new(1, 0, 1, 0)
+        fondoImagen.BackgroundTransparency = 1
+        fondoImagen.Image = "rbxassetid://" .. ID_FONDO_TITLEBAR
+        fondoImagen.ScaleType = Enum.ScaleType.Stretch
+        fondoImagen.ZIndex = 6
+        fondoImagen.Parent = titleBar
+
+        -- Aseguramos que la imagen esté recortada por las esquinas redondeadas
+        local imageCorner = Instance.new("UICorner")
+        imageCorner.CornerRadius = UDim.new(0, 8)
+        imageCorner.Parent = fondoImagen
+    end
+
     local titleCorner = Instance.new("UICorner")
     titleCorner.CornerRadius = UDim.new(0, 8)
     titleCorner.Parent = titleBar
@@ -174,6 +198,9 @@ function RyzeCodeHub:CreateWindow(config)
     contentFrame.ZIndex = 6
     contentFrame.Parent = mainFrame
 
+    -- ============================
+    -- BURBUJA MINIMIZADA (con logo R)
+    -- ============================
     local bubble = Instance.new("TextButton")
     bubble.Name = "Bubble"
     bubble.Size = UDim2.new(0, 60, 0, 60)
@@ -181,13 +208,31 @@ function RyzeCodeHub:CreateWindow(config)
     bubble.AnchorPoint = Vector2.new(0, 0)
     bubble.BackgroundColor3 = Colors.Bubble
     bubble.BorderSizePixel = 0
-    bubble.Text = "R"
+    bubble.Text = ""  -- Vacío, porque si no hay ID mostramos la R
     bubble.TextColor3 = Colors.TextLight
     bubble.TextSize = 32
     bubble.Font = Enum.Font.GothamBold
     bubble.Visible = false
     bubble.Active = true
     bubble.Parent = screenGui
+
+    -- Si hay ID del logo, mostramos la imagen
+    if ID_LOGO_R and ID_LOGO_R ~= 0 then
+        local logoImg = Instance.new("ImageLabel")
+        logoImg.Name = "LogoR"
+        logoImg.Size = UDim2.new(1, 0, 1, 0)
+        logoImg.BackgroundTransparency = 1
+        logoImg.Image = "rbxassetid://" .. ID_LOGO_R
+        logoImg.ScaleType = Enum.ScaleType.Fit
+        logoImg.ZIndex = 2
+        logoImg.Parent = bubble
+
+        -- La burbuja se vuelve transparente para que solo se vea el logo
+        bubble.BackgroundTransparency = 1
+    else
+        -- Si no hay ID, mostramos la "R" en texto
+        bubble.Text = "R"
+    end
 
     local bubbleCorner = Instance.new("UICorner")
     bubbleCorner.CornerRadius = UDim.new(1, 0)
@@ -196,6 +241,10 @@ function RyzeCodeHub:CreateWindow(config)
     local bubbleBorder = Instance.new("UIStroke")
     bubbleBorder.Color = Colors.Border
     bubbleBorder.Thickness = 2
+    -- Si no hay ID, mostramos borde. Si hay ID, lo ocultamos
+    if ID_LOGO_R and ID_LOGO_R ~= 0 then
+        bubbleBorder.Transparency = 1
+    end
     bubbleBorder.Parent = bubble
 
     local bubbleDragging = false
@@ -203,10 +252,16 @@ function RyzeCodeHub:CreateWindow(config)
     local bubbleStartMouse = nil
 
     bubble.MouseEnter:Connect(function()
-        bubble.BackgroundColor3 = Colors.BubbleHover
+        if ID_LOGO_R and ID_LOGO_R ~= 0 then
+            -- Si hay imagen, no cambiamos el fondo (está transparente)
+        else
+            bubble.BackgroundColor3 = Colors.BubbleHover
+        end
     end)
     bubble.MouseLeave:Connect(function()
-        bubble.BackgroundColor3 = Colors.Bubble
+        if not (ID_LOGO_R and ID_LOGO_R ~= 0) then
+            bubble.BackgroundColor3 = Colors.Bubble
+        end
     end)
 
     bubble.InputBegan:Connect(function(input)
@@ -709,9 +764,7 @@ function RyzeCodeHub:CreateWindow(config)
             button.Font = Enum.Font.Gotham
             button.ZIndex = 8
             button.LayoutOrder = order
-            button.Parent = tabContent
-
-            local btnCorner = Instance.new("UICorner")
+            button.Parent = tabContent            local btnCorner = Instance.new("UICorner")
             btnCorner.CornerRadius = UDim.new(0, 6)
             btnCorner.Parent = button
 
@@ -1385,8 +1438,9 @@ addConn(RunService.RenderStepped:Connect(function()
                         local tamanoTexto = math.clamp(alturaPersonaje * 0.2, 8, 16)
 
                         -- Posicionamos la barra al lado del torso
+                        -- SEPARACIÓN: +14 en lugar de +5 para que no esté tan pegada
                         contenedor.Size = UDim2.new(0, anchoBarra, 0, alturaBarra)
-                        contenedor.Position = UDim2.new(0, posCabeza.X + (anchoBarra * 2 + 5), 0, posCabeza.Y)
+                        contenedor.Position = UDim2.new(0, posCabeza.X + anchoBarra + 14, 0, posCabeza.Y)
 
                         -- Actualizamos el texto
                         local texto = contenedor:FindFirstChild("Porcentaje")
