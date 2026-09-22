@@ -13,6 +13,16 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================
+-- LISTA MANUAL DE ALIADOS (TEAM CHECK)
+-- ============================
+-- Escribe aquí los nombres EXACTOS de tus compañeros de equipo.
+-- Ejemplo: aliados["RyzeCode"] = true
+local aliados = {
+    -- ["NombreDeTuAmigo1"] = true,
+    -- ["NombreDeTuAmigo2"] = true,
+}
+
+-- ============================
 -- COLORES
 -- ============================
 local Colors = {
@@ -93,7 +103,6 @@ function RyzeCodeHub:CreateWindow(config)
     border.Thickness = 2
     border.Parent = mainFrame
 
-    -- Barra de título (azul oscuro original)
     local titleBar = Instance.new("Frame")
     titleBar.Name = "TitleBar"
     titleBar.Size = UDim2.new(1, 0, 0, 40)
@@ -175,7 +184,6 @@ function RyzeCodeHub:CreateWindow(config)
     contentFrame.ZIndex = 6
     contentFrame.Parent = mainFrame
 
-    -- Burbuja minimizada (R azul original)
     local bubble = Instance.new("TextButton")
     bubble.Name = "Bubble"
     bubble.Size = UDim2.new(0, 60, 0, 60)
@@ -828,6 +836,12 @@ local healthBars = {}
 
 local instantReloadEnabled = false
 
+-- FLY
+local flyEnabled = false
+local flySpeed = 50
+local flyKey = "E"
+local flyActive = false
+
 -- ============================
 -- AIM: CONTROLES
 -- ============================
@@ -867,7 +881,8 @@ AimTab:CreateToggle({
     Callback = function(valor)
         if AutoWindow._fovCircle then
             AutoWindow._fovCircle.Visible = valor
-        end    end
+        end
+    end
 })
 
 AimTab:CreateSlider({
@@ -1018,6 +1033,39 @@ MiscTab:CreateToggle({
     end
 })
 
+MiscTab:CreateToggle({
+    Name = "Fly",
+    CurrentValue = false,
+    Order = 2,
+    Callback = function(valor)
+        flyEnabled = valor
+        if not valor and LocalPlayer.Character then
+            local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then hrp.Anchored = false end
+        end
+    end
+})
+
+MiscTab:CreateKeybind({
+    Name = "Fly Key",
+    DefaultKey = "E",
+    Order = 3,
+    Callback = function(nombre, input)
+        flyKey = nombre
+    end
+})
+
+MiscTab:CreateSlider({
+    Name = "Fly Speed",
+    Min = 1,
+    Max = 100,
+    CurrentValue = 50,
+    Order = 4,
+    Callback = function(valor)
+        flySpeed = valor
+    end
+})
+
 -- ============================
 -- FUNCIONES DE LÓGICA
 -- ============================
@@ -1042,10 +1090,21 @@ local function estaMuerto(personaje)
     return false
 end
 
+-- TEAM CHECK MANUAL + ESTÁNDAR
 local function esDelMismoEquipo(jugador)
-    if not LocalPlayer.Team then return false end
-    if not jugador.Team then return false end
-    return jugador.Team == LocalPlayer.Team
+    -- 1. Comprobación por lista manual (funciona SIEMPRE)
+    if aliados[jugador.Name] then
+        return true
+    end
+
+    -- 2. Comprobación por equipo estándar (si el juego lo soporta)
+    if LocalPlayer.Team and jugador.Team then
+        if jugador.Team == LocalPlayer.Team then
+            return true
+        end
+    end
+
+    return false
 end
 
 local function obtenerPuntoObjetivo(personaje, forzarCabeza)
@@ -1504,6 +1563,99 @@ addConn(RunService.RenderStepped:Connect(function()
     end
 end))
 
+-- ============================
+-- FLY
+-- ============================
+-- Guardamos la posición original del HRP
+local flyBodyVelocity = nil
+
+local function desactivarFly()
+    if LocalPlayer.Character then
+        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.Anchored = false
+        end
+    end
+end
+
+addConn(RunService.RenderStepped:Connect(function()
+    if not flyEnabled then
+        return
+    end
+
+    local personaje = LocalPlayer.Character
+    if not personaje then return end
+
+    local hrp = personaje:FindFirstChild("HumanoidRootPart")
+    local humanoide = personaje:FindFirstChildOfClass("Humanoid")
+    if not hrp or not humanoide then return end
+
+    -- Solo activamos el movimiento si se mantiene la tecla bindeada
+    if not flyActive then
+        hrp.Anchored = false
+        return
+    end
+
+    hrp.Anchored = true
+
+    local cam = workspace.CurrentCamera
+    if not cam then return end
+
+    -- Dirección según la cámara
+    local direccion = Vector3.new(0, 0, 0)
+    local velocidad = flySpeed / 10
+
+    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+        direccion = direccion + cam.CFrame.LookVector
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+        direccion = direccion - cam.CFrame.LookVector
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+        direccion = direccion - cam.CFrame.RightVector
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+        direccion = direccion + cam.CFrame.RightVector
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+        direccion = direccion + Vector3.new(0, 1, 0)
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+        direccion = direccion - Vector3.new(0, 1, 0)
+    end
+
+    if direccion.Magnitude > 0 then
+        direccion = direccion.Unit * velocidad
+        hrp.CFrame = hrp.CFrame + direccion
+    end
+end))
+
+-- Detectar la tecla del Fly
+addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    local nombre = keyName(input.UserInputType)
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        nombre = input.KeyCode.Name
+    end
+    if nombre == flyKey then
+        flyActive = true
+    end
+end))
+
+addConn(UserInputService.InputEnded:Connect(function(input)
+    local nombre = keyName(input.UserInputType)
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        nombre = input.KeyCode.Name
+    end
+    if nombre == flyKey then
+        flyActive = false
+        -- Al soltar, desanclamos
+        if LocalPlayer.Character then
+            local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then hrp.Anchored = false end
+        end
+    end
+end))
+
 addConn(Players.PlayerRemoving:Connect(function(jugador)
     local hl = espFrame:FindFirstChild("WallhackHL_" .. jugador.Name)
     if hl then hl:Destroy() end
@@ -1531,6 +1683,12 @@ addCleanup(function()
         AutoWindow._fovCircle.Visible = false
     end
 
+    -- Desactivamos el fly
+    if LocalPlayer.Character then
+        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then hrp.Anchored = false end
+    end
+
     aimbotEnabled = false
     silentAimEnabled = false
     magicBulletEnabled = false
@@ -1539,7 +1697,9 @@ addCleanup(function()
     showHealthEnabled = false
     teamCheckEnabled = false
     instantReloadEnabled = false
+    flyEnabled = false
     aimActive = false
+    flyActive = false
     skeletons = {}
     healthBars = {}
 
