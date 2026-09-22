@@ -300,23 +300,17 @@ function RyzeCodeHub:CreateWindow(config)
     espFolder.Name = "ESP"
     espFolder.Parent = espGui
 
-    -- ============================
-    -- SISTEMA DE LIMPIEZA (importante)
-    -- ============================
     local cleanupFunctions = {}
 
     local function addCleanup(fn)
         table.insert(cleanupFunctions, fn)
     end
 
-    -- Botón cerrar: destruye UI + limpia todo
     closeBtn.MouseButton1Click:Connect(function()
-        -- Ejecutamos todas las funciones de limpieza
         for _, fn in ipairs(cleanupFunctions) do
             pcall(fn)
         end
 
-        -- Destruimos la UI
         screenGui:Destroy()
         espGui:Destroy()
     end)
@@ -430,7 +424,6 @@ function RyzeCodeHub:CreateWindow(config)
                 pcall(callback, currentValue)
             end)
 
-            -- Al cerrar: forzar OFF y ejecutar callback
             addCleanup(function()
                 if toggleState.value then
                     toggleState.value = false
@@ -949,6 +942,20 @@ EspTab:CreateToggle({
 -- ============================
 -- FUNCIONES DE LÓGICA
 -- ============================
+
+-- Comprobación de muerto mejorada (3 comprobaciones)
+local function estaMuerto(personaje)
+    if not personaje then return true end
+
+    local humanoide = personaje:FindFirstChildOfClass("Humanoid")
+    if not humanoide then return true end
+
+    if humanoide.Health <= 0 then return true end
+    if humanoide:GetState() == Enum.HumanoidStateType.Dead then return true end
+
+    return false
+end
+
 local function obtenerPuntoObjetivo(personaje, forzarCabeza)
     if forzarCabeza or boneAim == "HEAD" then
         local cabeza = personaje:FindFirstChild("Head")
@@ -1005,29 +1012,29 @@ local function obtenerJugadorCercano(forzarCabeza)
         if jugador ~= LocalPlayer then
             local personaje = jugador.Character
             if personaje then
-                local humanoide = personaje:FindFirstChildOfClass("Humanoid")
-                if humanoide then
-                    if humanoide.Health <= 0 and not targetDead then continue end
+                -- TARGET DEAD: usa la función estaMuerto
+                if estaMuerto(personaje) and not targetDead then
+                    continue
+                end
 
-                    local puntoObjetivo = obtenerPuntoObjetivo(personaje, forzarCabeza)
-                    if puntoObjetivo then
-                        if wallCheck then
-                            if hayParedEntre(cam.CFrame.Position, puntoObjetivo.Position, personaje) then
-                                continue
-                            end
+                local puntoObjetivo = obtenerPuntoObjetivo(personaje, forzarCabeza)
+                if puntoObjetivo then
+                    if wallCheck then
+                        if hayParedEntre(cam.CFrame.Position, puntoObjetivo.Position, personaje) then
+                            continue
                         end
+                    end
 
-                        local distanciaStuds = (puntoObjetivo.Position - cam.CFrame.Position).Magnitude
-                        local distanciaMetros = distanciaStuds * 0.28
+                    local distanciaStuds = (puntoObjetivo.Position - cam.CFrame.Position).Magnitude
+                    local distanciaMetros = distanciaStuds * 0.28
 
-                        if distanciaMetros <= aimDistance then
-                            local screenPoint, onScreen = cam:WorldToViewportPoint(puntoObjetivo.Position)
-                            if onScreen then
-                                local distPantalla = (Vector2.new(screenPoint.X, screenPoint.Y) - centroPantalla).Magnitude
-                                if distPantalla <= radioFov and distPantalla < mejorDistancia then
-                                    mejorDistancia = distPantalla
-                                    mejorObjetivo = puntoObjetivo
-                                end
+                    if distanciaMetros <= aimDistance then
+                        local screenPoint, onScreen = cam:WorldToViewportPoint(puntoObjetivo.Position)
+                        if onScreen then
+                            local distPantalla = (Vector2.new(screenPoint.X, screenPoint.Y) - centroPantalla).Magnitude
+                            if distPantalla <= radioFov and distPantalla < mejorDistancia then
+                                mejorDistancia = distPantalla
+                                mejorObjetivo = puntoObjetivo
                             end
                         end
                     end
@@ -1040,7 +1047,7 @@ local function obtenerJugadorCercano(forzarCabeza)
 end
 
 -- ============================
--- CONEXIONES (guardadas para poder desconectar)
+-- CONEXIONES
 -- ============================
 local conexiones = {}
 
@@ -1101,27 +1108,39 @@ addConn(UserInputService.InputBegan:Connect(function(input, gameProcessed)
     cam.CFrame = cframeOriginal
 end))
 
--- ESP: Highlights y Skeleton
+-- ============================
+-- ESP: WALLHACK + SKELETON
+-- ============================
 addConn(RunService.RenderStepped:Connect(function()
+    -- WALLHACK (con Adornee actualizado cada frame)
     if wallhackEnabled then
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
-                local nombre = "WallhackHL_" .. jugador.Character.Name
-                if not espFolder:FindFirstChild(nombre) then
+                local personaje = jugador.Character
+                local nombre = "WallhackHL_" .. jugador.Name
+                local hlExistente = espFolder:FindFirstChild(nombre)
+
+                if not hlExistente then
                     local hl = Instance.new("Highlight")
                     hl.Name = nombre
-                    hl.Adornee = jugador.Character
+                    hl.Adornee = personaje
                     hl.FillColor = Color3.fromRGB(30, 144, 255)
                     hl.FillTransparency = 0.5
                     hl.OutlineColor = Color3.fromRGB(255, 255, 255)
                     hl.OutlineTransparency = 0
                     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                     hl.Parent = espFolder
+                else
+                    -- Si apunta a un personaje viejo, actualizarlo
+                    if hlExistente.Adornee ~= personaje then
+                        hlExistente.Adornee = personaje
+                    end
                 end
             end
         end
     end
 
+    -- SKELETON
     if skeletonEnabled then
         local cam = workspace.CurrentCamera
         if not cam then return end
@@ -1211,23 +1230,19 @@ end))
 -- LIMPIEZA AL CERRAR
 -- ============================
 addCleanup(function()
-    -- Desconectar todas las conexiones
     for _, conn in ipairs(conexiones) do
         pcall(function() conn:Disconnect() end)
     end
     conexiones = {}
 
-    -- Limpiar highlights y esqueletos
     for _, hijo in ipairs(espFolder:GetChildren()) do
         pcall(function() hijo:Destroy() end)
     end
 
-    -- Ocultar el círculo FOV
     if AutoWindow._fovCircle then
         AutoWindow._fovCircle.Visible = false
     end
 
-    -- Resetear variables
     aimbotEnabled = false
     silentAimEnabled = false
     wallhackEnabled = false
