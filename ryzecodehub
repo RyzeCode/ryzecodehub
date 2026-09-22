@@ -37,6 +37,7 @@ local Colors = {
     SliderKnob   = Color3.fromRGB(255, 255, 255),
     DropdownBg   = Color3.fromRGB(45, 45, 55),
     DropdownHover= Color3.fromRGB(70, 70, 85),
+    Skeleton     = Color3.fromRGB(30, 144, 255),
 }
 
 -- ============================
@@ -63,6 +64,7 @@ function RyzeCodeHub:CreateWindow(config)
     screenGui.Name = "Ryze_UI"
     screenGui.ResetOnSpawn = false
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.IgnoreGuiInset = true
     screenGui.Parent = game.CoreGui
 
     local mainFrame = Instance.new("Frame")
@@ -73,8 +75,9 @@ function RyzeCodeHub:CreateWindow(config)
     mainFrame.BorderSizePixel = 0
     mainFrame.Active = true
     mainFrame.Draggable = true
-    mainFrame.ClipsDescendants = true
+    mainFrame.ClipsDescendants = false
     mainFrame.Visible = true
+    mainFrame.ZIndex = 5
     mainFrame.Parent = screenGui
 
     local corner = Instance.new("UICorner")
@@ -86,11 +89,13 @@ function RyzeCodeHub:CreateWindow(config)
     border.Thickness = 2
     border.Parent = mainFrame
 
+    -- Barra de título
     local titleBar = Instance.new("Frame")
     titleBar.Name = "TitleBar"
     titleBar.Size = UDim2.new(1, 0, 0, 40)
     titleBar.BackgroundColor3 = Colors.TitleBar
     titleBar.BorderSizePixel = 0
+    titleBar.ZIndex = 6
     titleBar.Parent = mainFrame
 
     local titleCorner = Instance.new("UICorner")
@@ -98,17 +103,16 @@ function RyzeCodeHub:CreateWindow(config)
     titleCorner.Parent = titleBar
 
     local title = Instance.new("TextLabel")
-    title.Name = "Title"
     title.Size = UDim2.new(1, -100, 1, 0)
     title.BackgroundTransparency = 1
     title.Text = windowName
     title.TextColor3 = Colors.TextLight
     title.TextSize = 18
     title.Font = Enum.Font.GothamBold
+    title.ZIndex = 7
     title.Parent = titleBar
 
     local minimizeBtn = Instance.new("TextButton")
-    minimizeBtn.Name = "MinimizeBtn"
     minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
     minimizeBtn.Position = UDim2.new(1, -70, 0.5, -15)
     minimizeBtn.BackgroundTransparency = 1
@@ -117,10 +121,10 @@ function RyzeCodeHub:CreateWindow(config)
     minimizeBtn.TextColor3 = Colors.TextLight
     minimizeBtn.TextSize = 22
     minimizeBtn.Font = Enum.Font.GothamBold
+    minimizeBtn.ZIndex = 7
     minimizeBtn.Parent = titleBar
 
     local closeBtn = Instance.new("TextButton")
-    closeBtn.Name = "CloseBtn"
     closeBtn.Size = UDim2.new(0, 30, 0, 30)
     closeBtn.Position = UDim2.new(1, -35, 0.5, -15)
     closeBtn.BackgroundTransparency = 1
@@ -129,44 +133,50 @@ function RyzeCodeHub:CreateWindow(config)
     closeBtn.TextColor3 = Colors.TextLight
     closeBtn.TextSize = 18
     closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.ZIndex = 7
     closeBtn.Parent = titleBar
 
+    -- Línea horizontal
     local divider = Instance.new("Frame")
-    divider.Name = "Divider"
     divider.Size = UDim2.new(1, 0, 0, 2)
     divider.Position = UDim2.new(0, 0, 0, 40)
     divider.BackgroundColor3 = Colors.Border
     divider.BorderSizePixel = 0
-    divider.ZIndex = 2
+    divider.ZIndex = 6
     divider.Parent = mainFrame
 
+    -- Lista de pestañas
     local tabList = Instance.new("Frame")
     tabList.Name = "TabList"
     tabList.Size = UDim2.new(0, 150, 1, -42)
     tabList.Position = UDim2.new(0, 0, 0, 42)
     tabList.BackgroundColor3 = Colors.TabList
     tabList.BorderSizePixel = 0
+    tabList.ZIndex = 6
     tabList.Parent = mainFrame
 
+    -- Línea vertical
     local verticalDivider = Instance.new("Frame")
-    verticalDivider.Name = "VerticalDivider"
     verticalDivider.Size = UDim2.new(0, 2, 1, -42)
     verticalDivider.Position = UDim2.new(0, 150, 0, 42)
     verticalDivider.BackgroundColor3 = Colors.Border
     verticalDivider.BorderSizePixel = 0
-    verticalDivider.ZIndex = 2
+    verticalDivider.ZIndex = 6
     verticalDivider.Parent = mainFrame
 
+    -- Contenido
     local contentFrame = Instance.new("Frame")
     contentFrame.Name = "ContentFrame"
     contentFrame.Size = UDim2.new(1, -152, 1, -42)
     contentFrame.Position = UDim2.new(0, 152, 0, 42)
     contentFrame.BackgroundColor3 = Colors.Content
     contentFrame.BorderSizePixel = 0
+    contentFrame.ClipsDescendants = false
+    contentFrame.ZIndex = 6
     contentFrame.Parent = mainFrame
 
+    -- Bola flotante
     local bubble = Instance.new("TextButton")
-    bubble.Name = "Bubble"
     bubble.Size = UDim2.new(0, 60, 0, 60)
     bubble.Position = UDim2.new(0.5, -30, 0.5, -30)
     bubble.BackgroundColor3 = Colors.Bubble
@@ -221,6 +231,7 @@ function RyzeCodeHub:CreateWindow(config)
         screenGui:Destroy()
     end)
 
+    -- Círculo FOV
     local fovCircle = Instance.new("Frame")
     fovCircle.Name = "FovCircle"
     fovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -229,7 +240,7 @@ function RyzeCodeHub:CreateWindow(config)
     fovCircle.BackgroundTransparency = 1
     fovCircle.BorderSizePixel = 0
     fovCircle.Visible = false
-    fovCircle.ZIndex = 10
+    fovCircle.ZIndex = 1
     fovCircle.Parent = screenGui
 
     local fovCircleCorner = Instance.new("UICorner")
@@ -247,11 +258,19 @@ function RyzeCodeHub:CreateWindow(config)
         fovCircle.Size = UDim2.new(0, diametro, 0, diametro)
     end
 
-    -- Capa de dibujo para ESP (una sola, para todos los jugadores)
-    local espFolder = Instance.new("Folder")
-    espFolder.Name = "RyzeESP"
-    espFolder.Parent = screenGui
+    -- Capa para ESP (encima de todo menos UI)
+    local espGui = Instance.new("ScreenGui")
+    espGui.Name = "Ryze_ESP"
+    espGui.ResetOnSpawn = false
+    espGui.IgnoreGuiInset = true
+    espGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    espGui.Parent = game.CoreGui
 
+    local espFolder = Instance.new("Folder")
+    espFolder.Name = "ESP"
+    espFolder.Parent = espGui
+
+    -- Frame contenedor para líneas (sin layout)
     local Window = {}
     local tabs = {}
 
@@ -268,6 +287,7 @@ function RyzeCodeHub:CreateWindow(config)
         tabButton.TextColor3 = Colors.TextDark
         tabButton.TextSize = 14
         tabButton.Font = Enum.Font.Gotham
+        tabButton.ZIndex = 7
         tabButton.Parent = tabList
 
         local tabContent = Instance.new("ScrollingFrame")
@@ -278,6 +298,8 @@ function RyzeCodeHub:CreateWindow(config)
         tabContent.ScrollBarThickness = 4
         tabContent.CanvasSize = UDim2.new(0, 0, 0, 0)
         tabContent.Visible = false
+        tabContent.ZIndex = 7
+        tabContent.ClipsDescendants = false
         tabContent.Parent = contentFrame
 
         local layout = Instance.new("UIListLayout")
@@ -292,43 +314,10 @@ function RyzeCodeHub:CreateWindow(config)
         padding.Parent = tabContent
 
         layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            tabContent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
+            tabContent.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 200)
         end)
 
         local Tab = {}
-
-        function Tab:CreateButton(buttonConfig)
-            buttonConfig = buttonConfig or {}
-            local buttonName = buttonConfig.Name or "Button"
-            local callback = buttonConfig.Callback or function() end
-
-            local button = Instance.new("TextButton")
-            button.Name = "Button_" .. buttonName
-            button.Size = UDim2.new(1, -16, 0, 32)
-            button.BackgroundColor3 = Colors.Button
-            button.BorderSizePixel = 0
-            button.Text = buttonName
-            button.TextColor3 = Colors.TextDark
-            button.TextSize = 14
-            button.Font = Enum.Font.Gotham
-            button.Parent = tabContent
-
-            local btnCorner = Instance.new("UICorner")
-            btnCorner.CornerRadius = UDim.new(0, 6)
-            btnCorner.Parent = button
-
-            button.MouseEnter:Connect(function()
-                button.BackgroundColor3 = Colors.ButtonHover
-            end)
-            button.MouseLeave:Connect(function()
-                button.BackgroundColor3 = Colors.Button
-            end)
-            button.MouseButton1Click:Connect(function()
-                pcall(callback)
-            end)
-
-            return button
-        end
 
         function Tab:CreateToggle(toggleConfig)
             toggleConfig = toggleConfig or {}
@@ -346,6 +335,7 @@ function RyzeCodeHub:CreateWindow(config)
             toggle.TextSize = 14
             toggle.Font = Enum.Font.Gotham
             toggle.TextXAlignment = Enum.TextXAlignment.Left
+            toggle.ZIndex = 8
             toggle.Parent = tabContent
 
             local toggleCorner = Instance.new("UICorner")
@@ -361,6 +351,7 @@ function RyzeCodeHub:CreateWindow(config)
             indicator.Position = UDim2.new(1, -50, 0.5, -10)
             indicator.BackgroundColor3 = currentValue and Colors.ToggleOn or Colors.ToggleOff
             indicator.BorderSizePixel = 0
+            indicator.ZIndex = 9
             indicator.Parent = toggle
 
             local indCorner = Instance.new("UICorner")
@@ -372,6 +363,7 @@ function RyzeCodeHub:CreateWindow(config)
             circle.Position = currentValue and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
             circle.BackgroundColor3 = Colors.ToggleCircle
             circle.BorderSizePixel = 0
+            circle.ZIndex = 10
             circle.Parent = indicator
 
             local circleCorner = Instance.new("UICorner")
@@ -397,12 +389,12 @@ function RyzeCodeHub:CreateWindow(config)
             local callback = sliderConfig.Callback or function() end
 
             local container = Instance.new("TextButton")
-            container.Name = "Slider_" .. sliderName
             container.Size = UDim2.new(1, -16, 0, 50)
             container.BackgroundColor3 = Colors.Button
             container.BorderSizePixel = 0
             container.Text = ""
             container.AutoButtonColor = false
+            container.ZIndex = 8
             container.Parent = tabContent
 
             local contCorner = Instance.new("UICorner")
@@ -418,6 +410,7 @@ function RyzeCodeHub:CreateWindow(config)
             label.TextSize = 14
             label.Font = Enum.Font.Gotham
             label.TextXAlignment = Enum.TextXAlignment.Left
+            label.ZIndex = 9
             label.Parent = container
 
             local valueLabel = Instance.new("TextLabel")
@@ -429,6 +422,7 @@ function RyzeCodeHub:CreateWindow(config)
             valueLabel.TextSize = 14
             valueLabel.Font = Enum.Font.GothamBold
             valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+            valueLabel.ZIndex = 9
             valueLabel.Parent = container
 
             local bar = Instance.new("Frame")
@@ -436,6 +430,7 @@ function RyzeCodeHub:CreateWindow(config)
             bar.Position = UDim2.new(0, 10, 1, -14)
             bar.BackgroundColor3 = Colors.SliderEmpty
             bar.BorderSizePixel = 0
+            bar.ZIndex = 9
             bar.Parent = container
 
             local barCorner = Instance.new("UICorner")
@@ -446,6 +441,7 @@ function RyzeCodeHub:CreateWindow(config)
             fill.Size = UDim2.new(0, 0, 1, 0)
             fill.BackgroundColor3 = Colors.SliderFill
             fill.BorderSizePixel = 0
+            fill.ZIndex = 10
             fill.Parent = bar
 
             local fillCorner = Instance.new("UICorner")
@@ -457,7 +453,7 @@ function RyzeCodeHub:CreateWindow(config)
             knob.Position = UDim2.new(0, -8, 0.5, -8)
             knob.BackgroundColor3 = Colors.SliderKnob
             knob.BorderSizePixel = 0
-            knob.ZIndex = 2
+            knob.ZIndex = 11
             knob.Parent = bar
 
             local knobCorner = Instance.new("UICorner")
@@ -507,11 +503,11 @@ function RyzeCodeHub:CreateWindow(config)
             local initialRelative = (currentValue - minValue) / (maxValue - minValue)
             fill.Size = UDim2.new(initialRelative, 0, 1, 0)
             knob.Position = UDim2.new(initialRelative, -8, 0.5, -8)
-            valueLabel.Text = tostring(currentValue)
 
             return container
         end
 
+        -- DROPDOWN que se abre HACIA ARRIBA si no cabe
         function Tab:CreateDropdown(dropdownConfig)
             dropdownConfig = dropdownConfig or {}
             local dropdownName = dropdownConfig.Name or "Dropdown"
@@ -520,12 +516,12 @@ function RyzeCodeHub:CreateWindow(config)
             local callback = dropdownConfig.Callback or function() end
 
             local container = Instance.new("TextButton")
-            container.Name = "Dropdown_" .. dropdownName
             container.Size = UDim2.new(1, -16, 0, 32)
             container.BackgroundColor3 = Colors.Button
             container.BorderSizePixel = 0
             container.Text = ""
             container.AutoButtonColor = false
+            container.ZIndex = 8
             container.Parent = tabContent
 
             local contCorner = Instance.new("UICorner")
@@ -541,6 +537,7 @@ function RyzeCodeHub:CreateWindow(config)
             label.TextSize = 14
             label.Font = Enum.Font.Gotham
             label.TextXAlignment = Enum.TextXAlignment.Left
+            label.ZIndex = 9
             label.Parent = container
 
             local arrow = Instance.new("TextLabel")
@@ -551,16 +548,18 @@ function RyzeCodeHub:CreateWindow(config)
             arrow.TextColor3 = Colors.TextDark
             arrow.TextSize = 12
             arrow.Font = Enum.Font.GothamBold
+            arrow.ZIndex = 9
             arrow.Parent = container
 
+            -- Lista de opciones (creada en ScreenGui para que no la recorte el ScrollingFrame)
             local optionList = Instance.new("Frame")
-            optionList.Size = UDim2.new(1, 0, 0, #options * 28)
-            optionList.Position = UDim2.new(0, 0, 1, 4)
+            optionList.Name = "OptionList_" .. dropdownName
+            optionList.Size = UDim2.new(0, container.AbsoluteSize.X, 0, #options * 28)
             optionList.BackgroundColor3 = Colors.DropdownBg
             optionList.BorderSizePixel = 0
             optionList.Visible = false
-            optionList.ZIndex = 5
-            optionList.Parent = container
+            optionList.ZIndex = 100
+            optionList.Parent = screenGui
 
             local listCorner = Instance.new("UICorner")
             listCorner.CornerRadius = UDim.new(0, 6)
@@ -578,7 +577,7 @@ function RyzeCodeHub:CreateWindow(config)
                 optButton.TextColor3 = Colors.TextDark
                 optButton.TextSize = 14
                 optButton.Font = Enum.Font.Gotham
-                optButton.ZIndex = 6
+                optButton.ZIndex = 101
                 optButton.Parent = optionList
 
                 optButton.MouseEnter:Connect(function()
@@ -596,7 +595,27 @@ function RyzeCodeHub:CreateWindow(config)
             end
 
             container.MouseButton1Click:Connect(function()
-                optionList.Visible = not optionList.Visible
+                if optionList.Visible then
+                    optionList.Visible = false
+                    return
+                end
+
+                -- Calcular posición
+                local absPos = container.AbsolutePosition
+                local absSize = container.AbsoluteSize
+                local listHeight = #options * 28
+                local screenHeight = screenGui.AbsoluteSize.Y
+
+                optionList.Size = UDim2.new(0, absSize.X, 0, listHeight)
+
+                -- ¿Cabe hacia abajo?
+                if absPos.Y + absSize.Y + listHeight < screenHeight then
+                    optionList.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 4)
+                else
+                    optionList.Position = UDim2.new(0, absPos.X, 0, absPos.Y - listHeight - 4)
+                end
+
+                optionList.Visible = true
             end)
 
             return container
@@ -611,7 +630,6 @@ function RyzeCodeHub:CreateWindow(config)
             local currentKey = defaultKey
 
             local button = Instance.new("TextButton")
-            button.Name = "Keybind_" .. keybindName
             button.Size = UDim2.new(1, -16, 0, 32)
             button.BackgroundColor3 = Colors.Button
             button.BorderSizePixel = 0
@@ -619,6 +637,7 @@ function RyzeCodeHub:CreateWindow(config)
             button.TextColor3 = Colors.TextDark
             button.TextSize = 14
             button.Font = Enum.Font.Gotham
+            button.ZIndex = 8
             button.Parent = tabContent
 
             local btnCorner = Instance.new("UICorner")
@@ -684,6 +703,7 @@ function RyzeCodeHub:CreateWindow(config)
 
     function Window:Destroy()
         screenGui:Destroy()
+        espGui:Destroy()
     end
 
     Window._actualizarFovCircle = actualizarFovCircle
@@ -700,7 +720,7 @@ local AutoWindow = RyzeCodeHub:CreateWindow({ Name = "Ryze.xyz" })
 local AimTab = AutoWindow:CreateTab("AIM")
 local EspTab = AutoWindow:CreateTab("ESP")
 
--- Estado del AIM
+-- Estado AIM
 local aimbotEnabled = false
 local fovValue = 70
 local aimDistance = 600
@@ -709,10 +729,11 @@ local aimActive = false
 local boneAim = "HEAD"
 local targetDead = false
 
--- Estado del ESP
+-- Estado ESP
 local espFolder = AutoWindow._espFolder
 local wallhackEnabled = false
 local skeletonEnabled = false
+local skeletons = {}
 
 -- ============================
 -- AIM: CONTROLES
@@ -722,7 +743,6 @@ AimTab:CreateToggle({
     CurrentValue = false,
     Callback = function(valor)
         aimbotEnabled = valor
-        print("[Ryze.xyz] Aimbot:", valor)
     end
 })
 
@@ -757,7 +777,6 @@ AimTab:CreateDropdown({
         if opt == "200M" then aimDistance = 200
         elseif opt == "600M" then aimDistance = 600
         elseif opt == "1000M" then aimDistance = 1000 end
-        print("[Ryze.xyz] AIM DISTANCE:", opt)
     end
 })
 
@@ -767,7 +786,6 @@ AimTab:CreateDropdown({
     CurrentOption = "HEAD",
     Callback = function(opt)
         boneAim = opt
-        print("[Ryze.xyz] BONE AIM:", opt)
     end
 })
 
@@ -776,7 +794,6 @@ AimTab:CreateToggle({
     CurrentValue = false,
     Callback = function(valor)
         targetDead = valor
-        print("[Ryze.xyz] TARGET DEAD:", valor)
     end
 })
 
@@ -785,7 +802,6 @@ AimTab:CreateKeybind({
     DefaultKey = "F",
     Callback = function(nombre, input)
         toggleKey = nombre
-        print("[Ryze.xyz] TOGGLE AIM cambiado a:", nombre)
     end
 })
 
@@ -797,11 +813,9 @@ EspTab:CreateToggle({
     CurrentValue = false,
     Callback = function(valor)
         wallhackEnabled = valor
-        print("[Ryze.xyz] Wallhack:", valor)
         if not valor then
-            -- Limpiamos los highlights
             for _, hijo in ipairs(espFolder:GetChildren()) do
-                if hijo.Name:sub(1, 13) == "WallhackHL_" then
+                if hijo.Name:sub(1, 10) == "WallhackHL" then
                     hijo:Destroy()
                 end
             end
@@ -814,16 +828,13 @@ EspTab:CreateToggle({
     CurrentValue = false,
     Callback = function(valor)
         skeletonEnabled = valor
-        print("[Ryze.xyz] Skeleton:", valor)
         if not valor then
-            -- Limpiamos los esqueletos
             for _, hijo in ipairs(espFolder:GetChildren()) do
-                if hijo.Name:sub(1, 12) == "SkeletonLine" or hijo:IsA("Line") then
-                    hijo:Destroy()
-                elseif hijo:IsA("Folder") then
+                if hijo.Name:sub(1, 9) == "Skeleton_" then
                     hijo:Destroy()
                 end
             end
+            skeletons = {}
         end
     end
 })
@@ -836,7 +847,9 @@ local function obtenerPuntoObjetivo(personaje)
         local cabeza = personaje:FindFirstChild("Head")
         if cabeza then return cabeza end
     end
-    return personaje:FindFirstChild("HumanoidRootPart") or personaje:FindFirstChild("UpperTorso") or personaje:FindFirstChild("Torso")
+    return personaje:FindFirstChild("HumanoidRootPart")
+        or personaje:FindFirstChild("UpperTorso")
+        or personaje:FindFirstChild("Torso")
 end
 
 local function obtenerJugadorCercano()
@@ -881,18 +894,17 @@ local function obtenerJugadorCercano()
     return mejorObjetivo
 end
 
-local function apuntarAlObjetivo(punto)
-    local cam = workspace.CurrentCamera
-    if not cam or not punto then return end
-    local objetivoCFrame = CFrame.new(cam.CFrame.Position, punto.Position)
-    cam.CFrame = cam.CFrame:Lerp(objetivoCFrame, 0.35)
-end
-
+-- Aimbot con lerp más agresivo para que sea fluido y preciso
 RunService.RenderStepped:Connect(function()
     if not aimbotEnabled or not aimActive then return end
+
+    local cam = workspace.CurrentCamera
+    if not cam then return end
+
     local objetivo = obtenerJugadorCercano()
     if objetivo then
-        apuntarAlObjetivo(objetivo)
+        local targetCFrame = CFrame.new(cam.CFrame.Position, objetivo.Position)
+        cam.CFrame = cam.CFrame:Lerp(targetCFrame, 0.5)
     end
 end)
 
@@ -915,12 +927,9 @@ end)
 -- ============================
 -- ESP: LÓGICA
 -- ============================
-
--- Crea el Highlight para el wallhack
 local function crearHighlight(personaje)
     local nombre = "WallhackHL_" .. personaje.Name
-    local existente = espFolder:FindFirstChild(nombre)
-    if existente then return existente end
+    if espFolder:FindFirstChild(nombre) then return end
 
     local hl = Instance.new("Highlight")
     hl.Name = nombre
@@ -931,96 +940,76 @@ local function crearHighlight(personaje)
     hl.OutlineTransparency = 0
     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     hl.Parent = espFolder
-    return hl
 end
 
--- Crea las líneas del esqueleto
+-- Creamos el esqueleto con Frames (más fiable que Line)
 local function crearEsqueleto(personaje)
     local nombre = "Skeleton_" .. personaje.Name
-    local existente = espFolder:FindFirstChild(nombre)
-    if existente then return existente end
+    if espFolder:FindFirstChild(nombre) then
+        return espFolder:FindFirstChild(nombre)
+    end
 
     local carpeta = Instance.new("Folder")
     carpeta.Name = nombre
     carpeta.Parent = espFolder
 
-    -- Definimos las conexiones entre huesos (por nombre de parte)
-    local conexiones = {
-        {"Head", "UpperTorso"},
-        {"UpperTorso", "LowerTorso"},
-        {"LowerTorso", "LeftUpperLeg"},
-        {"LowerTorso", "RightUpperLeg"},
-        {"LeftUpperLeg", "LeftLowerLeg"},
-        {"RightUpperLeg", "RightLowerLeg"},
-        {"UpperTorso", "LeftUpperArm"},
-        {"UpperTorso", "RightUpperArm"},
-        {"LeftUpperArm", "LeftLowerArm"},
-        {"RightUpperArm", "RightLowerArm"},
-        -- Fallback para R6
-        {"Head", "Torso"},
-        {"Torso", "Left Leg"},
-        {"Torso", "Right Leg"},
-        {"Torso", "Left Arm"},
-        {"Torso", "Right Arm"},
-    }
-
-    for i, con in ipairs(conexiones) do
-        local linea = Instance.new("Line")
-        linea.Name = "SkeletonLine" .. i
-        linea.Color = Color3.fromRGB(30, 144, 255)
-        linea.Thickness = 2
-        linea.Transparency = 0
+    -- Creamos 15 frames finitos (uno por cada conexión)
+    local lineas = {}
+    for i = 1, 15 do
+        local linea = Instance.new("Frame")
+        linea.Name = "L" .. i
+        linea.BackgroundColor3 = Colors.Skeleton
+        linea.BorderSizePixel = 0
+        linea.AnchorPoint = Vector2.new(0.5, 0.5)
+        linea.ZIndex = 1
+        linea.Visible = false
         linea.Parent = carpeta
+        lineas[i] = linea
     end
 
+    skeletons[personaje] = lineas
     return carpeta
 end
 
--- Actualiza las posiciones de las líneas del esqueleto
-local function actualizarEsqueleto(personaje)
-    local carpeta = espFolder:FindFirstChild("Skeleton_" .. personaje.Name)
-    if not carpeta then return end
+-- Conexiones R15 y R6
+local conexiones = {
+    -- R15
+    {"Head", "UpperTorso"},
+    {"UpperTorso", "LowerTorso"},
+    {"LowerTorso", "LeftUpperLeg"},
+    {"LowerTorso", "RightUpperLeg"},
+    {"LeftUpperLeg", "LeftLowerLeg"},
+    {"RightUpperLeg", "RightLowerLeg"},
+    {"UpperTorso", "LeftUpperArm"},
+    {"UpperTorso", "RightUpperArm"},
+    {"LeftUpperArm", "LeftLowerArm"},
+    {"RightUpperArm", "RightLowerArm"},
+    -- R6
+    {"Head", "Torso"},
+    {"Torso", "Left Leg"},
+    {"Torso", "Right Leg"},
+    {"Torso", "Left Arm"},
+    {"Torso", "Right Arm"},
+}
 
-    local cam = workspace.CurrentCamera
-    if not cam then return end
-
-    local conexiones = {
-        {"Head", "UpperTorso"},
-        {"UpperTorso", "LowerTorso"},
-        {"LowerTorso", "LeftUpperLeg"},
-        {"LowerTorso", "RightUpperLeg"},
-        {"LeftUpperLeg", "LeftLowerLeg"},
-        {"RightUpperLeg", "RightLowerLeg"},
-        {"UpperTorso", "LeftUpperArm"},
-        {"UpperTorso", "RightUpperArm"},
-        {"LeftUpperArm", "LeftLowerArm"},
-        {"RightUpperArm", "RightLowerArm"},
-        {"Head", "Torso"},
-        {"Torso", "Left Leg"},
-        {"Torso", "Right Leg"},
-        {"Torso", "Left Arm"},
-        {"Torso", "Right Arm"},
-    }
-
-    for i, con in ipairs(conexiones) do
-        local linea = carpeta:FindFirstChild("SkeletonLine" .. i)
-        if linea then
-            local parteA = personaje:FindFirstChild(con[1])
-            local parteB = personaje:FindFirstChild(con[2])
-            if parteA and parteB then
-                local posA = cam:WorldToViewportPoint(parteA.Position)
-                local posB = cam:WorldToViewportPoint(parteB.Position)
-                linea.From = Vector2.new(posA.X, posA.Y)
-                linea.To = Vector2.new(posB.X, posB.Y)
-                linea.Visible = true
-            else
-                linea.Visible = false
-            end
-        end
+-- Función para dibujar una línea con Frame rotado
+local function dibujarLinea(linea, posA, posB)
+    local delta = posB - posA
+    local distancia = delta.Magnitude
+    if distancia < 1 then
+        linea.Visible = false
+        return
     end
+
+    local centro = (posA + posB) / 2
+    local angulo = math.atan2(delta.Y, delta.X)
+
+    linea.Visible = true
+    linea.Size = UDim2.new(0, distancia, 0, 2)
+    linea.Position = UDim2.new(0, centro.X, 0, centro.Y)
+    linea.Rotation = math.deg(angulo)
 end
 
--- Bucle del ESP (cada frame)
 RunService.RenderStepped:Connect(function()
     -- WALLHACK
     if wallhackEnabled then
@@ -1033,18 +1022,43 @@ RunService.RenderStepped:Connect(function()
 
     -- SKELETON
     if skeletonEnabled then
+        local cam = workspace.CurrentCamera
+        if not cam then return end
+
         for _, jugador in ipairs(Players:GetPlayers()) do
             if jugador ~= LocalPlayer and jugador.Character then
-                if not espFolder:FindFirstChild("Skeleton_" .. jugador.Character.Name) then
-                    crearEsqueleto(jugador.Character)
+                local personaje = jugador.Character
+                if not skeletons[personaje] then
+                    crearEsqueleto(personaje)
                 end
-                actualizarEsqueleto(jugador.Character)
+
+                local lineas = skeletons[personaje]
+                if lineas then
+                    for i, con in ipairs(conexiones) do
+                        local linea = lineas[i]
+                        if linea then
+                            local a = personaje:FindFirstChild(con[1])
+                            local b = personaje:FindFirstChild(con[2])
+                            if a and b then
+                                local pa, onA = cam:WorldToViewportPoint(a.Position)
+                                local pb, onB = cam:WorldToViewportPoint(b.Position)
+                                if onA and onB then
+                                    dibujarLinea(linea, Vector2.new(pa.X, pa.Y), Vector2.new(pb.X, pb.Y))
+                                else
+                                    linea.Visible = false
+                                end
+                            else
+                                linea.Visible = false
+                            end
+                        end
+                    end
+                end
             end
         end
     end
 end)
 
--- Limpiar cuando un jugador muere o sale
+-- Limpieza al salir
 Players.PlayerRemoving:Connect(function(jugador)
     local hl = espFolder:FindFirstChild("WallhackHL_" .. jugador.Name)
     if hl then hl:Destroy() end
